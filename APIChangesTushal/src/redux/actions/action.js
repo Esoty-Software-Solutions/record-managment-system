@@ -368,15 +368,11 @@ export const CityList = () => async (dispatch) => {
   const token = getToken();
 
   try {
-    const response = await AdminAPI.get(
-      // "/misc/cities",
-      "/cities",
-      {
-        headers: {
-          Authorization: token,
-        },
-      }
-    );
+    const response = await AdminAPI.get("/misc/cities", {
+      headers: {
+        Authorization: token,
+      },
+    });
     dispatch({
       type: ActionTypes.GET_CITY_LIST,
       payload: response,
@@ -393,15 +389,11 @@ export const MedicalSpecialList = () => async (dispatch) => {
   const token = getToken();
 
   try {
-    const response = await AdminAPI.get(
-      // "/misc/medicalSpecialties",
-      "/medicalSpecialties",
-      {
-        headers: {
-          Authorization: token,
-        },
-      }
-    );
+    const response = await AdminAPI.get("/misc/medicalSpecialties", {
+      headers: {
+        Authorization: token,
+      },
+    });
     dispatch({
       type: ActionTypes.GET_MEDICAL_SPECIAL_LIST_RESPONSE,
       payload: response,
@@ -889,7 +881,7 @@ export const ReltationShipBeneficary = () => async (dispatch) => {
   const token = getToken();
 
   try {
-    const response = await AdminAPI.get("/relationshipToBeneficiaryEnum", {
+    const response = await AdminAPI.get("/misc/relationshipToBeneficiaryEnum", {
       headers: {
         Authorization: token,
       },
@@ -951,6 +943,31 @@ export const AddHelathreportData = (data, bene_id) => async (dispatch) => {
   } catch (err) {
     dispatch({
       type: ActionTypes.ADD_HEALTH_ISSUE_FAMILY_MEMBER,
+      payload: err.response.data.message,
+    });
+  }
+};
+
+export const GenderList = () => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.get(
+      // "/cities",
+      "/misc/genderEnum",
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+    dispatch({
+      type: ActionTypes.GET_GENDER_LIST,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.GET_GENDER_LIST,
       payload: err.response.data.message,
     });
   }
