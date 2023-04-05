@@ -881,7 +881,7 @@ export const ReltationShipBeneficary = () => async (dispatch) => {
   const token = getToken();
 
   try {
-    const response = await AdminAPI.get("misc/relationshipToBeneficiaryEnum", {
+    const response = await AdminAPI.get("/misc/relationshipToBeneficiaryEnum", {
       headers: {
         Authorization: token,
       },
