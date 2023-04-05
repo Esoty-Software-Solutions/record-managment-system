@@ -368,7 +368,10 @@ export const CityList = () => async (dispatch) => {
   const token = getToken();
 
   try {
-    const response = await AdminAPI.get("/misc/cities", {
+    const response = await AdminAPI.get(
+      // "/misc/cities",
+      "/cities",
+     {
       headers: {
         Authorization: token,
       },
@@ -389,7 +392,10 @@ export const MedicalSpecialList = () => async (dispatch) => {
   const token = getToken();
 
   try {
-    const response = await AdminAPI.get("/misc/medicalSpecialties", {
+    const response = await AdminAPI.get(
+      // "/misc/medicalSpecialties",
+      "/medicalSpecialties",
+       {
       headers: {
         Authorization: token,
       },
@@ -881,7 +887,10 @@ export const ReltationShipBeneficary = () => async (dispatch) => {
   const token = getToken();
 
   try {
-    const response = await AdminAPI.get("/misc/relationshipToBeneficiaryEnum", {
+    const response = await AdminAPI.get(
+      // "/misc/relationshipToBeneficiaryEnum",
+      "/relationshipToBeneficiaryEnum",
+     {
       headers: {
         Authorization: token,
       },
@@ -953,8 +962,8 @@ export const GenderList = () => async (dispatch) => {
 
   try {
     const response = await AdminAPI.get(
-      // "/cities",
-      "/misc/genderEnum",
+      "/cities",
+      // "/misc/genderEnum",
       {
         headers: {
           Authorization: token,
