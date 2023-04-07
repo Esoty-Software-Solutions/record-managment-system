@@ -2838,6 +2838,22 @@ body {
 
 
 
+.data-tble table tbody td button.stus-btn-new {
+  background: #39BCC0;
+  border-radius: 50px;
+  color: #FFFFFF;
+  font-weight: 500;
+  font-size: 14px;
+  border: none;
+  padding: 4px 15px 6px;
+  display: inline;
+  /* width: 100%; */
+  white-space: nowrap;
+}
+
+
+
+
 .data-tble table tbody td button.stus-btn {
   background: #39BCC0;
   border-radius: 50px;
@@ -2860,6 +2876,11 @@ body {
 }
 
 .stus-btn.red {
+  background: #FF3131 !important;
+  color: #fff !important;
+}
+
+.stus-btn-new.red {
   background: #FF3131 !important;
   color: #fff !important;
 }
@@ -3598,3 +3619,9 @@ ul.drp-dwn {
 }
 
 /* sub page End */
+
+.two-edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

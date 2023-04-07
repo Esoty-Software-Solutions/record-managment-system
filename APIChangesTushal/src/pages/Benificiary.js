@@ -1471,10 +1471,7 @@ const Benificiary = () => {
 
   useEffect(() => {
     if (benef_list) {
-      if (
-        benef_list?.data?.codeStatus == "200" ||
-        benef_list?.data?.data?.objectCount
-      ) {
+      if (benef_list?.data?.statusCode == "200") {
         setLoader(false);
         if (skip == 0) {
           setBeneList(benef_list?.data?.data?.objectArray);

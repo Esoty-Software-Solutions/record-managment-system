@@ -1004,9 +1004,10 @@ function Doctor() {
                       <AssignHospitalToDoctor
                         centerlist={data}
                         show={modalShow}
+                        onHide={() => setModalShow(false)}
                         medicaldata={medicaldata}
                         previosMedical={sidebarList}
-                        onHide={() => setModalShow(false)}
+                      
                       />
 
                       <UpdateDoctorForm

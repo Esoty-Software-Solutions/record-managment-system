@@ -234,8 +234,8 @@ function MedicalCenter() {
     if (add_medical_res) {
       // console.log("sss1", add_medical_res?.data?.data?.objectArray);
       if (
-        add_medical_res?.data?.statusCode === "200" ||
-        add_medical_res?.data?.statusCode === "201"
+        add_medical_res?.data?.codeStatus === "200" ||
+        add_medical_res?.data?.codeStatus === "201"
       ) {
         // setSkip(0);
 
@@ -1005,6 +1005,7 @@ function MedicalCenter() {
                       {cityList &&
                         cityList?.map((ss, s) => (
                           <option val={ss.backendName} key={s}>
+                            {/* // <option val={ss.cityName} key={s}> */}
                             {ss?.displayName}
                           </option>
                         ))}

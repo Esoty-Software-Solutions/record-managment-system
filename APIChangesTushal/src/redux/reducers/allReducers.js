@@ -33,6 +33,21 @@ const initialState = {
   health_issue_family_member: "",
   health_issue_family_res: "",
   logout_res: "",
+  genderList: "",
+  delete_city_res: "",
+  add_city_Res: "",
+  add_medicalspeciality_Res: "",
+  add_relation_res: "",
+  add_gender_res: "",
+  medicalService_list: "",
+  add_medical_servie_res: "",
+  appointment_List: "",
+  add_appointment_Res: "",
+  time_Slot_list: "",
+  add_time_slot_res: "",
+  get_account_list: "",
+  add_account_status_Res: "",
+  update_user_res: "",
 };
 
 export const authReducer = (state = initialState, { type, payload }) => {
@@ -48,6 +63,10 @@ export const Fetchdata = (state = initialState, { type, payload }) => {
   switch (type) {
     case ActionTypes.GET_DATA_RESPONSE:
       return { ...state, data_res: payload };
+    case ActionTypes.GET_TIMESLOT_LIST:
+      return { ...state, time_Slot_list: payload };
+    case ActionTypes.GET_ACCOUNTSTATUS_LIST:
+      return { ...state, get_account_list: payload };
 
     case ActionTypes.GET_DATA_MEDICAL_RESPONSE:
       return { ...state, medica_res: payload };
@@ -89,14 +108,30 @@ export const Fetchdata = (state = initialState, { type, payload }) => {
       return { ...state, beneficary_relation_list: payload };
     case ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER:
       return { ...state, health_issue_family_member: payload };
+    case ActionTypes.GET_GENDER_LIST:
+      return { ...state, genderList: payload };
+    case ActionTypes.GET_MEDICAL_SERVICE_LIST:
+      return { ...state, medicalService_list: payload };
+    case ActionTypes.GET_APPOINTMENT_LIST:
+      return { ...state, appointment_List: payload };
     default:
       return state;
   }
 };
 export const submitform = (state = initialState, { type, payload }) => {
   switch (type) {
+    case ActionTypes.ADD_TIMESLOT_LIST:
+      return { ...state, add_time_slot_res: payload };
+    case ActionTypes.ADD_MEDICAL_SERVICE_RES:
+      return { ...state, add_medical_servie_res: payload };
+    case ActionTypes.ADD_BENE_RETALTION_LIST:
+      return { ...state, add_relation_res: payload };
+    case ActionTypes.ADD_GENDER_RES:
+      return { ...state, add_gender_res: payload };
     case ActionTypes.UPDATE_APPOINTMENT_LIST:
       return { ...state, update_res: payload };
+    case ActionTypes.ADD_MEDIACLSPECILAITY_RES:
+      return { ...state, add_medicalspeciality_Res: payload };
     case ActionTypes.ADD_DOCTOR_RES:
       return { ...state, add_doctor_res: payload };
     case ActionTypes.UPDATE_DOCTOR_RES:
@@ -125,8 +160,20 @@ export const submitform = (state = initialState, { type, payload }) => {
       return { ...state, delete_schedule_one_by_one: payload };
     case ActionTypes.ADD_HEALTH_ISSUE_FAMILY_MEMBER:
       return { ...state, health_issue_family_res: payload };
+    case ActionTypes.DELETE_CITY_RES:
+      return { ...state, delete_city_res: payload };
     case ActionTypes.LOGOUT_RES:
       return { ...state, logout_res: payload };
+    case ActionTypes.ADD_CITY_RES:
+      return { ...state, add_city_Res: payload };
+    case ActionTypes.ADD_APPOINTMENT_RES:
+      return { ...state, add_appointment_Res: payload };
+    case ActionTypes.ADD_APPOINTMENT_RES:
+      return { ...state, add_appointment_Res: payload };
+    case ActionTypes.ADD_ACCOUNT_STATUS_LIST:
+      return { ...state, add_account_status_Res: payload };
+    case ActionTypes.UPDATE_USER_DETAILS:
+      return { ...state, update_user_res: payload };
     default:
       return state;
   }

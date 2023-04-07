@@ -18,10 +18,11 @@ const Header = () => {
   const Logout = (e) => {
     e.preventDefault();
     dispatch(LogoutAPI());
+    localStorage.clear();
+    router.push("/login");
   };
   useEffect(() => {
     if (logout_res) {
-      
       if (logout_res?.data?.statusCode == "200") {
         localStorage.clear();
         router.push("/login");

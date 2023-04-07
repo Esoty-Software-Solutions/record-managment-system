@@ -5,6 +5,11 @@ import { RiArrowDropDownLine } from "react-icons/ri";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import  {RiCustomerService2Fill} from "react-icons/ri"
+import  {BsGenderMale ,BsJournalMedical} from "react-icons/bs"
+import  {FaCity} from "react-icons/fa"
+import  {TbCalendarTime} from "react-icons/tb"
+import  {AiFillAccountBook} from "react-icons/ai"
 
 const Sidebar = () => {
   const location = useRouter();
@@ -189,6 +194,134 @@ const Sidebar = () => {
                 <img src={"/assets/images/side-5.svg"} alt="img" />
               </i>{" "}
               <span> Admintration</span>
+            </Link>
+          </li>
+
+          {/* New Work 6-04-2023 */}
+
+          <li
+            className={
+              location.pathname == "/Cities" ? "active meni-tem" : "meni-tem"
+            }
+          >
+            <Link href="/Cities">
+              <i>
+                {" "}
+                <FaCity style={{fontSize:"20px"}} />
+                {/* <img src={"/assets/images/side-4.svg"} alt="img" /> */}
+              </i>{" "}
+              <span>Cities</span>
+            </Link>
+          </li>
+
+          <li
+            className={
+              location.pathname == "/MedicalSpecilaty"
+                ? "active meni-tem"
+                : "meni-tem"
+            }
+          >
+            <Link href="/MedicalSpecilaty">
+              <i>
+                {" "}
+                <BsJournalMedical style={{fontSize:"20px"}} />
+                {/* <img src={"/assets/images/side-4.svg"} alt="img" /> */}
+              </i>{" "}
+              <span>Medical Specilaties</span>
+            </Link>
+          </li>
+
+          <li
+            className={
+              location.pathname == "/Gender" ? "active meni-tem" : "meni-tem"
+            }
+          >
+            <Link href="/Gender">
+              <i>
+                {" "}
+                <BsGenderMale  style={{fontSize:"20px"}}/>
+                {/* <img src={"/assets/images/side-4.svg"} alt="img" /> */}
+              </i>{" "}
+              <span>Gender</span>
+            </Link>
+          </li>
+          <li
+            className={
+              location.pathname == "/MedicalService"
+                ? "active meni-tem"
+                : "meni-tem"
+            }
+          >
+            <Link href="/MedicalService">
+              <i>
+                {" "}
+                <RiCustomerService2Fill style={{fontSize:"20px"}}/>
+                {/* <img src={"/assets/images/side-4.svg"} alt="img" /> */}
+              </i>{" "}
+              <span>Medical Service</span>
+            </Link>
+          </li>
+          <li
+            className={
+              location.pathname == "/Appointment"
+                ? "active meni-tem"
+                : "meni-tem"
+            }
+          >
+            <Link href="/Appointment">
+              <i>
+                {" "}
+                <img src={"/assets/images/side-4.svg"} alt="img" />
+              </i>{" "}
+              <span>Appointment</span>
+            </Link>
+          </li>
+
+          <li
+            className={
+              location.pathname == "/RelationShip"
+                ? "active meni-tem"
+                : "meni-tem"
+            }
+          >
+            <Link href="/RelationShip">
+              <i>
+                {" "}
+                <img src={"/assets/images/side-4.svg"} alt="img" />
+              </i>{" "}
+              <span>Relation Ship</span>
+            </Link>
+          </li>
+
+          <li
+            className={
+              location.pathname == "/TimeSlot" ? "active meni-tem" : "meni-tem"
+            }
+          >
+            <Link href="/TimeSlot">
+              <i>
+                {" "}
+                <TbCalendarTime style={{fontSize:"20px"}}/>
+                {/* <img src={"/assets/images/side-4.svg"} alt="img" /> */}
+              </i>{" "}
+              <span>Time Slot</span>
+            </Link>
+          </li>
+
+          <li
+            className={
+              location.pathname == "/AccountStatus"
+                ? "active meni-tem"
+                : "meni-tem"
+            }
+          >
+            <Link href="/AccountStatus">
+              <i>
+                {" "}
+                <AiFillAccountBook  style={{fontSize:"20px"}} />
+                {/* <img src={"/assets/images/side-4.svg"} alt="img" /> */}
+              </i>{" "}
+              <span>Account Status</span>
             </Link>
           </li>
         </ul>
