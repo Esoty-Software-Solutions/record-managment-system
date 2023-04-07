@@ -13,6 +13,7 @@ function UserEditModal(props) {
   const dispatch = useDispatch();
 
   const UpdateDetails = (values) => {
+    console.log("val",values)
     dispatch(UpdateUserDetail(props?.userinfo?._id, values));
     // setTimeout(() => {
 
@@ -56,7 +57,7 @@ function UserEditModal(props) {
     }
   };
 
-  console.log("role", userrole?.length, props?.userinfo?.userRole);
+  console.log("role",  props?.userinfo);
 
   const removeRole = (e, data) => {
     e.preventDefault();
@@ -91,7 +92,7 @@ function UserEditModal(props) {
                   //   ? props?.userinfo?.gender
                   //   : "",
                   instituionId: props?.userinfo?.instituionId,
-                  city: props?.userinfo?.city,
+                
                   doctorId: props.userinfo?.doctorId
                     ? props.userinfo?.doctorId
                     : null,
@@ -118,7 +119,7 @@ function UserEditModal(props) {
                 }) => (
                   <form
                     className="inpt-fld"
-                    id="form-datas"
+                    id="form-datass"
                     onSubmit={handleSubmit}
                   >
                     <div className="prt-fmr">
@@ -358,7 +359,7 @@ function UserEditModal(props) {
           <button onClick={props.onHide} className="cls-btn-btn">
             Cancel
           </button>
-          <button className="add-fmy-btn" type="submit" form="form-datas">
+          <button className="add-fmy-btn" type="submit" form="form-datass">
             Update
           </button>
         </div>

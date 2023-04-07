@@ -97,7 +97,7 @@ function Admiration() {
   useEffect(() => {
     if (admist_usr_list) {
       // if (admist_usr_list?.data?.codeStatus === "200") {
-      console.log("res", admist_usr_list?.data?.data);
+      // console.log("res", admist_usr_list?.data?.data);
       if (admist_usr_list?.data?.statusCode == "200") {
         setLoader(false);
         if (skip == 0) {
@@ -249,7 +249,17 @@ function Admiration() {
   useEffect(() => {
     if (update_user_res) {
       if (update_user_res?.data?.statusCode == "200") {
-        dispatch(GetUserInfo());
+        Swal.fire({
+          text: update_user_res?.data?.message,
+          timer: 2000,
+          icon: "success",
+        });
+        if (key == "user") {
+          dispatch(GetAdmistratotUserList(0, 10));
+        } else {
+          dispatch(GetUserInfo());
+        }
+
         setUserEditModal(false);
       } else {
         Swal.fire({
