@@ -1,29 +1,63 @@
 import AddCityModal from "@/Component/Modals/MisceLinuos/AddCityModal";
+import UpdateModal from "@/Component/Modals/MisceLinuos/UpdateModal";
 import { CityList } from "@/redux/actions/action";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Col, Row, Table } from "react-bootstrap";
-import { AiFillDelete } from "react-icons/ai";
+import { AiFillDelete, AiFillEdit } from "react-icons/ai";
+import { useIntl } from "react-intl";
 import { useDispatch, useSelector } from "react-redux";
 import Swal from "sweetalert2";
 
 function Cities() {
   const dispatch = useDispatch();
+
   const { city_list } = useSelector((state) => state.fetchdata);
+  const [conut, setObjectCount] = useState();
+  const [totaldata, setTotalData] = useState(false);
+  const [loader, setLoader] = useState(false);
+  const [limit] = useState(10);
+  const [skip, setSkip] = useState(0);
   const [cityModal, setCityModal] = useState(false);
-  const { add_city_Res, delete_city_res } = useSelector(
+  const [updatecityModal, UpdatesetCityModal] = useState(false);
+  const [UpdateData, setUpdateData] = useState([]);
+  const { add_city_Res, delete_city_res, update_city_res } = useSelector(
     (state) => state.submitdata
   );
   // const { delete_city_res } = useSelector((state) => state.submidata);
   const [cityList, setCityList] = useState([]);
+
+  const APICall = (value) => {
+    if (totaldata == false) {
+      dispatch(CityList(skip, limit, value));
+    } else {
+      setLoader(false);
+    }
+  };
   useEffect(() => {
-    dispatch(CityList());
-  }, []);
+    setLoader(true);
+    APICall();
+  }, [skip, limit]);
 
   useEffect(() => {
     if (city_list) {
-      if (city_list?.data?.statusCode === "200") {
+      if (city_list?.data?.statusCode == "200") {
         // setLoader(false);
-        setCityList(city_list?.data?.data?.objectArray);
+        // setCityList(city_list?.data?.data?.objectArray);
+
+        setLoader(false);
+        if (skip == 0) {
+          setCityList(city_list?.data?.data?.objectArray);
+          setObjectCount(city_list?.data?.data?.objectCount);
+        } else {
+          let datas = [...city_list?.data?.data?.objectArray];
+          let result = datas.filter(
+            (o1) => !cityList.some((o2) => o1._id == o2._id)
+          );
+
+          setCityList((pre) => [...pre, ...result]);
+
+          setObjectCount(city_list?.data?.data?.objectCount);
+        }
       } else {
         Swal.fire({
           icon: "error",
@@ -32,6 +66,18 @@ function Cities() {
       }
     }
   }, [city_list]);
+
+  useEffect(() => {
+    if (conut == undefined) {
+      setTotalData(true);
+      setLoader(false);
+    } else if (conut <= skip + limit) {
+      setTotalData(true);
+    } else {
+      setTotalData(false);
+      setLoader(false);
+    }
+  }, [conut, cityList]);
 
   const DeleteCity = (e, val) => {
     e.preventDefault();
@@ -66,7 +112,7 @@ function Cities() {
 
   useEffect(() => {
     if (add_city_Res) {
-      if (add_city_Res?.data?.statusCode === "200") {
+      if (add_city_Res?.data?.statusCode == "200") {
         // setLoader(false);
         Swal.fire({
           position: "center",
@@ -75,7 +121,7 @@ function Cities() {
           timer: 2000,
         });
         setCityModal(false);
-        dispatch(CityList());
+        dispatch(CityList(skip, limit));
       } else {
         Swal.fire({
           icon: "error",
@@ -88,15 +134,96 @@ function Cities() {
     };
   }, [add_city_Res]);
 
+  useEffect(() => {
+    if (update_city_res) {
+      if (update_city_res?.data?.statusCode == "200") {
+        // setLoader(false);
+        Swal.fire({
+          position: "center",
+          icon: "success",
+          title: update_city_res?.data?.message,
+          timer: 2000,
+        });
+        setCityModal(false);
+        setSkip(0);
+        dispatch(CityList(0,limit));
+      } else {
+        Swal.fire({
+          icon: "error",
+          text: update_city_res,
+        });
+      }
+    }
+    return () => {
+      dispatch({ type: "UPDATE_CITY_RES", payload: "" });
+    };
+  }, [update_city_res]);
+
+  const { formatMessage: covert } = useIntl();
+
+  const EditCity = (e, val) => {
+    e.preventDefault();
+    setUpdateData(val);
+    UpdatesetCityModal(true);
+  };
+
+  const LoadMore = () => {
+    if (totaldata === false) {
+      setLoader(true);
+      // setsKip((pre) => pre + 5);
+      setSkip((pre) => pre + 10);
+    } else {
+      setLoader(false);
+    }
+  };
+
+  const debounce = (func) => {
+    let timer;
+    return function (...args) {
+      const context = this;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        func.apply(context, args);
+      }, 500);
+    };
+  };
+
+  const optimizedFn = useCallback(
+    debounce((valu) => {
+      setLoader(true);
+      APICall(valu);
+      setCityList([]);
+      setObjectCount(0);
+    }),
+    []
+  );
+
   return (
     <>
       <div className="main-content">
         <div className="tnstitution">
           <Row className="align-items-center">
-            <Col md={12} className="text-end">
+            <Col md={6}>
+              <div className="filter-chek mt-4">
+                <div className="srch-text">
+                  <input
+                    type="text"
+                    placeholder={covert({ id: "Search" })}
+                    onChange={(e) => {
+                      setLoader(true);
+                      // SetsearchQuery(e.target.value);
+                      optimizedFn(e.target.value);
+                    }}
+                  />
+                  <img src={"/assets/images/srch-1.svg"} alt="img" />
+                </div>
+              </div>
+            </Col>
+            <Col md={6} className="text-end">
               <div className="benfits-btn">
                 <button onClick={() => setCityModal(true)}>
-                  + Add New City
+                  {covert({ id: "addnewcity" })}
                 </button>
               </div>
             </Col>
@@ -108,15 +235,16 @@ function Cities() {
             {/* <Col lg={editsidecomponent ? 8 : 12} md={12}> */}
             <Col md={12}>
               <div className="restet-tble">
-                <h3>City List</h3>
+                <h3>{covert({ id: "CityList" })}</h3>
                 <div className="data-tble new-tble-sec">
                   {/* <Table className="table-responsive" onScroll={handleScroll}> */}
                   <Table>
                     <thead>
                       <tr>
-                        <th>Backend Name</th>
-                        <th>Display Name</th>
-                        <th>Actions</th>
+                        <th>{covert({ id: "bankendName" })}</th>
+                        <th>{covert({ id: "DisplayName" })}</th>
+                        <th>{covert({ id: "arabicName" })}</th>
+                        <th>{covert({ id: "Action" })}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -124,7 +252,8 @@ function Cities() {
                         cityList?.map((val, i) => (
                           <tr>
                             <td>{val?.backendName}</td>
-                            <td>{val?.displayName}</td>
+                            <td>{val?.englishName}</td>
+                            <td>{val?.arabicName}</td>
                             <td>
                               {/* <button
                                 className="stus-btn-new red"
@@ -133,20 +262,19 @@ function Cities() {
                                 <AiFillDelete style={{ fontSize: "20px" }} />
                               </button> */}
 
-                              {/* <button className="stus-btn-new">
-                                <img
-                                  src={"/assets/images/accept-claims.svg"}
-                                  alt="img"
-                                />{" "}
-                                Accepted
-                              </button> */}
+                              <button
+                                className="stus-btn-new"
+                                onClick={(e) => EditCity(e, val)}
+                              >
+                                <AiFillEdit style={{ fontSize: "20px" }} />
+                              </button>
                             </td>
                           </tr>
                         ))}
                     </tbody>
                   </Table>
 
-                  {/* {loader === true ? (
+                  {loader === true ? (
                     <center>
                       <div className="loader-img text-center  m-5">
                         <img
@@ -157,158 +285,30 @@ function Cities() {
                     </center>
                   ) : (
                     ""
-                  )} */}
+                  )}
+
+                  {!totaldata && loader == false ? (
+                    <center>
+                      <button className="load-more-btn" onClick={LoadMore}>
+                        {" "}
+                        {covert({ id: "loadmore" })}
+                      </button>
+                    </center>
+                  ) : (
+                    ""
+                  )}
                 </div>
               </div>
             </Col>
-            {/* {editsidecomponent ? (
-              <Col lg={4} md={12} className="trans-col">
-                <div className="clms-expl-dtl mt-4">
-                  <div className="explan-name-hdr">
-                    <h4>Example Name</h4>
-                    <p>Gender: Male</p>
-                    <p>Claim ID: 4568</p>
-                    <p>Medical Center: Medical Ceneter Name</p>
-                  </div>
-                  <div className="expl-img">
-                    <img src={"/assets/images/explan-img.png"} alt="img" />
-                  </div>
-                  <table className="clms-drl-tbl">
-                    <thead>
-                      <tr>
-                        <th>Service</th>
-                        <th>Package</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>Service 1</td>
-                        <td>Package 1</td>
-                        <td className="d-dlex">
-                          <img
-                            className="me-3"
-                            src={"/assets/images/accept-claim-1.svg"}
-                            alt="img"
-                          />{" "}
-                          <img
-                            src={"/assets/images/cross-claim-1.svg"}
-                            alt="img"
-                          />{" "}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Service 1</td>
-                        <td>Package 1</td>
-                        <td className="d-dlex">
-                          <img
-                            className="me-3"
-                            src={"/assets/images/accept-claim-1.svg"}
-                            alt="img"
-                          />{" "}
-                          <img
-                            src={"/assets/images/cross-claim-1.svg"}
-                            alt="img"
-                          />{" "}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Service 1</td>
-                        <td>Package 1</td>
-                        <td className="d-dlex">
-                          <img
-                            className="me-3"
-                            src={"/assets/images/accept-claim-1.svg"}
-                            alt="img"
-                          />{" "}
-                          <img
-                            src={"/assets/images/cross-claim-1.svg"}
-                            alt="img"
-                          />{" "}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Service 1</td>
-                        <td>Package 1</td>
-                        <td className="d-dlex">
-                          <img
-                            className="me-3"
-                            src={"/assets/images/accept-claim-1.svg"}
-                            alt="img"
-                          />{" "}
-                          <img
-                            src={"/assets/images/cross-claim-1.svg"}
-                            alt="img"
-                          />{" "}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Service 1</td>
-                        <td>Package 1</td>
-                        <td className="d-dlex">
-                          <img
-                            className="me-3"
-                            src={"/assets/images/accept-claim-1.svg"}
-                            alt="img"
-                          />{" "}
-                          <img
-                            src={"/assets/images/cross-claim-1.svg"}
-                            alt="img"
-                          />{" "}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Service 1</td>
-                        <td>Package 1</td>
-                        <td className="d-dlex">
-                          <img
-                            className="me-3"
-                            src={"/assets/images/accept-claim-1.svg"}
-                            alt="img"
-                          />{" "}
-                          <img
-                            src={"/assets/images/cross-claim-1.svg"}
-                            alt="img"
-                          />{" "}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Service 1</td>
-                        <td>Package 1</td>
-                        <td className="d-dlex">
-                          <img
-                            className="me-3"
-                            src={"/assets/images/accept-claim-1.svg"}
-                            alt="img"
-                          />{" "}
-                          <img
-                            src={"/assets/images/cross-claim-1.svg"}
-                            alt="img"
-                          />{" "}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  <div className="acc-refle-btn">
-                    <button>Accept All</button>
-                    <button className="red-clr">Refuse All</button>
-                  </div>
-                </div>
-              </Col>
-            ) : (
-              ""
-              // <Col lg={4}>
-              //   <center>
-              //     <div className="loader-img text-center  m-5">
-              //       <img src={"/assets/images/ball-triangle.svg"} alt="img" />
-              //     </div>
-              //   </center>
-              // </Col>
-            )} */}
           </Row>
         </div>
 
         <AddCityModal show={cityModal} onHide={() => setCityModal(false)} />
+        <AddCityModal
+          show={updatecityModal}
+          onHide={() => UpdatesetCityModal(false)}
+          data={UpdateData}
+        />
       </div>
     </>
   );

@@ -9,8 +9,10 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import ErrorComponent from "../Utils/ErrorComponent";
+import { useIntl } from "react-intl";
 function MedicalClaims() {
   const dispatch = useDispatch();
+  const { formatMessage: covert } = useIntl();
   const {} = useSelector((state) => state.fetchdata);
   const { add_doctor_res } = useSelector((state) => state.submitdata);
   const [specialList] = useState([]);
@@ -33,7 +35,7 @@ function MedicalClaims() {
     <div>
       <div className="main-content">
         <div className="flter-section">
-          <h3 class="fltr-drop">Filter</h3>
+          <h3 class="fltr-drop">{covert({ id: "filter" })}</h3>
           <div className={filterview ? "mt-4" : "removefltr"}>
             <div className="slct-srt">
               <Row>
@@ -42,7 +44,7 @@ function MedicalClaims() {
                     <div className="srch-text">
                       <input
                         type="text"
-                        placeholder="Search here..."
+                        placeholder={covert({ id: "Search" })}
                         // onChange={(e) => optimizedFn(e.target.value)}
                       />
                       <img src={"/assets/images/srch-1.svg"} alt="img" />
@@ -51,7 +53,7 @@ function MedicalClaims() {
                 </Col>
                 <Col lg={3} md={3}>
                   <div className="flter d-inline">
-                    <label>Institution</label>
+                    <label>{covert({ id:"Institution" })}</label>
                     <select
                       onChange={(e) => {
                         setSkip(0);
@@ -74,7 +76,7 @@ function MedicalClaims() {
                 </Col>
                 <Col lg={3} md={3}>
                   <div className="flter d-inline">
-                    <label>Medical Center</label>
+                    <label>{covert({ id:"MedicalCenter" })}</label>
                     <select>
                       <option value="" selected>
                         Level
@@ -86,7 +88,7 @@ function MedicalClaims() {
                 </Col>
                 <Col lg={2} md={3}>
                   <div className="flter d-inline">
-                    <label>Status</label>
+                    <label>{covert({ id:"Status" })}</label>
                     <select>
                       <option value="" selected>
                         Accepted
@@ -106,21 +108,21 @@ function MedicalClaims() {
           <Row>
             <Col lg={editsidecomponent ? 8 : 12} md={12}>
               <div className="restet-tble">
-                <h3>Data</h3>
+                <h3>{covert({ id: "MedicineClaimList" })}</h3>
                 <div className="data-tble new-tble-sec">
                   {/* <Table className="table-responsive" onScroll={handleScroll}> */}
                   <Table>
                     <thead>
                       <tr>
-                        <th>Subscriber Id</th>
-                        <th>Patient Name</th>
-                        <th>Claim ID</th>
-                        <th>Service Date</th>
-                        <th>Gender</th>
-                        <th>Age</th>
-                        <th>Medical Center</th>
-                        <th>Institution</th>
-                        <th>Status</th>
+                        <th>{covert({ id:"SubscribweId" })}</th>
+                        <th>{covert({ id:"patientname" })}</th>
+                        <th>{covert({ id:"Claim ID" })}</th>
+                        <th>{covert({ id:"Service Date" })}</th>
+                        <th>{covert({ id:"gender" })}</th>
+                        <th>{covert({ id:"Age" })}</th>
+                        <th>{covert({ id:"MedicalCenter" })}</th>
+                        <th>{covert({ id:"Institution" })}</th>
+                        <th>{covert({ id:"Status" })}</th>
                       </tr>
                     </thead>
                     <tbody>

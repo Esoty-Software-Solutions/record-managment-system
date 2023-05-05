@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Button,
   Col,
@@ -13,14 +13,23 @@ import {
 } from "react-bootstrap";
 
 import { useDispatch, useSelector } from "react-redux";
-import { getCookies } from "cookies-next";
+
 import {
   BenefeciaryList,
+  CityList,
   CreateBenefeciary,
   CreateInstitution,
+  FamilyMemberAllergies,
+  FamilyMemberChronicDiseases,
+  FamilyMemberClinicalVisits,
   FamilyMemberHealthIssueDetails,
+  FamilyMemberMedicalTests,
+  FamilyMemberSurgeryHistories,
+  GenderList,
   GetInstitutionList,
   ReltationShipBeneficary,
+  UpdateHightWeightHelath,
+  getHightWeightHelath,
 } from "../redux/actions/action";
 import Swal from "sweetalert2";
 import moment from "moment";
@@ -29,20 +38,25 @@ import { AiOutlineProfile } from "react-icons/ai";
 import _ from "lodash";
 import AddNewInfo from "../Component/Modals/AddNewMedicalInfo";
 import Link from "next/link";
+import { useIntl } from "react-intl";
+import { useRouter } from "next/router";
+import EditSubscriberData from "@/Component/Modals/EditSubscriberData";
+import EditBenificiary from "@/Component/Modals/EditBenificiary";
 
 function MyVerticallyCenteredModal(props) {
   // console.log("props", props);
+  const { formatMessage: covert } = useIntl();
+
   const dispatch = useDispatch();
   const [addFamilyMemberForm, SetFamilyMemberForm] = useState(false);
   const [indes, setIndex] = useState();
   const [tabsa, setTabs] = useState([]);
-  const [relationship, setrelationshipList] = useState([]);
+  const [relationship] = useState();
   const [key, setKey] = useState("home");
 
   const [familyDetails, setFamilyDetails] = useState({
     firstName: "",
     secondName: "",
-    thirdName: "",
     lastName: "",
     birthdate: "",
     relationshipToSubscriber: "",
@@ -52,60 +66,12 @@ function MyVerticallyCenteredModal(props) {
 
   // districtapi
   useEffect(() => {
-    dispatch(ReltationShipBeneficary());
+    dispatch(ReltationShipBeneficary(0, 500));
   }, []);
-
-  const { beneficary_relation_list } = useSelector((state) => state.fetchdata);
-
-  useEffect(() => {
-    if (beneficary_relation_list) {
-      if (
-        beneficary_relation_list?.data?.statusCode == "200" ||
-        beneficary_relation_list?.data?.object ||
-        beneficary_relation_list?.data?.objectCount
-      ) {
-        setrelationshipList(beneficary_relation_list?.data?.data);
-      } else {
-        Swal.fire({
-          icon: "error",
-          text: "Something Went Wrong In Relation API",
-        });
-      }
-    }
-    return () => {
-      dispatch({ type: "BENE_RETALTION_LIST", payload: "" });
-    };
-  }, [beneficary_relation_list]);
 
   // console.log("benfiacry_list", beneficary_relation_list)
   const addNewRow = (event) => {
     event.preventDefault();
-
-    // if (
-    //   familyDetails?.firstName == "" ||
-    //   familyDetails?.middleName === "" ||
-    //   familyDetails?.lastName == "" ||
-    //   familyDetails?.birthdate === "" ||
-    //   familyDetails?.relationshipToBeneficiary == "" ||
-    //   familyDetails?.gender === ""
-    // ) {
-    //   Swal.fire({
-    //     icon: "error",
-    //     text: "Add All Fields",
-    //   });
-    // }
-    //  else {
-    //   setTabs((pre) => [...pre, familyDetails]);
-    //   setFamilyDetails({
-    //     firstName: "",
-    //     middleName: "",
-    //     lastName: "",
-    //     birthdate: "",
-    //     relationshipToBeneficiary: "",
-    //     gender: "",
-    //     familyMemberId: random.toString(),
-    //   });
-    // }
 
     if (tabsa) {
       setTabs((pre) => [...pre, familyDetails]);
@@ -115,7 +81,6 @@ function MyVerticallyCenteredModal(props) {
     setFamilyDetails({
       firstName: "",
       secondName: "",
-      thirdName: "",
       lastName: "",
       birthdate: "",
       relationshipToSubscriber: "",
@@ -130,7 +95,7 @@ function MyVerticallyCenteredModal(props) {
     setFamilyDetails({
       firstName: "",
       secondName: "",
-      thirdName: "",
+
       lastName: "",
 
       birthdate: "",
@@ -158,7 +123,7 @@ function MyVerticallyCenteredModal(props) {
       // lastName: "",
       firstName: val?.firstName,
       secondName: val?.secondName,
-      thirdName: val?.thirdName,
+
       lastName: val?.lastName,
       birthdate: val?.birthdate,
       relationshipToSubscriber: val?.relationshipToSubscriber,
@@ -176,7 +141,6 @@ function MyVerticallyCenteredModal(props) {
     setFamilyDetails({
       firstName: "",
       secondName: "",
-      thirdName: "",
       lastName: "",
       birthdate: "",
       relationshipToSubscriber: "",
@@ -191,7 +155,6 @@ function MyVerticallyCenteredModal(props) {
     setFamilyDetails({
       firstName: "",
       secondName: "",
-      thirdName: "",
       lastName: "",
       birthdate: "",
       relationshipToSubscriber: "",
@@ -211,16 +174,16 @@ function MyVerticallyCenteredModal(props) {
     });
     setFamilyDetails({
       firstName: "",
-      middleName: "",
+      secondName: "",
       lastName: "",
       birthdate: "",
       relationshipToSubscriber: "",
       gender: "",
-      familyMemberId: Math.floor(Math.random() * Date.now()).toString(36),
+      // familyMemberId: Math.floor(Math.random() * Date.now()).toString(36),
     });
 
     setIndex();
-    console.log("data", tabsa);
+
     // setTabs(new_tabs);
     // setFamilyDetails({
     //   firstName: "",
@@ -248,8 +211,7 @@ function MyVerticallyCenteredModal(props) {
         // familyMembers: tabsa,
         beneficiaries: tabsa,
         institutionId: values.institutionID,
-        city: values.residence,
-        districtResidence: values.district,
+        city: values.cityId,
       };
       dispatch(CreateBenefeciary(data));
 
@@ -258,7 +220,6 @@ function MyVerticallyCenteredModal(props) {
         setFamilyDetails({
           firstName: "",
           secondName: "",
-          thirdName: "",
           lastName: "",
           birthdate: "",
           relationshipToSubscriber: "",
@@ -273,10 +234,12 @@ function MyVerticallyCenteredModal(props) {
   };
 
   // const data = props?.institutiondata?.split("-");
+  const { locale } = useRouter();
+  // const [search, setSearchQuery] = useState("");
 
   return (
     <Modal
-      className="add-fmly-mbm"
+      className={locale == "ar" ? "add-fmly-mbm new-rtl" : "add-fmly-mbm"}
       {...props}
       size="lg"
       aria-labelledby="contained-modal-title-vcenter"
@@ -284,12 +247,11 @@ function MyVerticallyCenteredModal(props) {
     >
       <Modal.Body className="p-0 ">
         <div className="add-new-bene">
-          <h4>Add New Beneficiary</h4>
+          <h4>{covert({ id: "addnewsubs" })}</h4>
           <p>
             {" "}
-            Company Name: <span>
-              {props?.institutiondata?.split("-")[2]}
-            </span>{" "}
+            {covert({ id: "Company Name" })}:{" "}
+            <span>{props?.institutiondata?.split("-")[2]}</span>{" "}
           </p>
           <div className="add-denefi-marker">
             <Tabs
@@ -298,20 +260,20 @@ function MyVerticallyCenteredModal(props) {
               className="add-bene-tabs"
               onSelect={(k) => setKey(k)}
             >
-              <Tab eventKey="home" title="New Primary Beneficiary">
+              <Tab eventKey="home" title={covert({ id: "New Primary" })}>
                 <div className="add-form">
                   <Formik
                     initialValues={{
                       firtname: "",
                       secondName: "",
                       thirdName: "",
-                      middleName: "",
+
                       lastName: "",
                       grandfathername: "",
                       birthday: "",
                       phone: "",
                       email: "",
-                      residence: "",
+                      cityId: "",
                       district: "",
                       gender: "",
                       empId: "",
@@ -338,10 +300,10 @@ function MyVerticallyCenteredModal(props) {
                         <Row>
                           <Col lg={3} md={4}>
                             <div className="form-group">
-                              <label>First name: </label>
+                              <label>{covert({ id: "fname" })}: </label>
                               <input
                                 type="text"
-                                placeholder="First name"
+                                placeholder={covert({ id: "fname" })}
                                 name="firtname"
                                 value={values.firtname}
                                 onChange={handleChange}
@@ -350,35 +312,23 @@ function MyVerticallyCenteredModal(props) {
                           </Col>
                           <Col lg={3} md={4}>
                             <div className="form-group">
-                              <label>Middle name: </label>
+                              <label>{covert({ id: "secondName" })}: </label>
                               <input
                                 type="text"
-                                pla
-                                ceholder="Middle name"
-                                name="middleName"
-                                value={values.middleName}
+                                placeholder={covert({ id: "secondName" })}
+                                name="secondName"
+                                value={values.secondName}
                                 onChange={handleChange}
                               />
                             </div>
                           </Col>
+
                           <Col lg={3} md={4}>
                             <div className="form-group">
-                              <label>Grandfather name </label>
+                              <label>{covert({ id: "lname" })}: </label>
                               <input
                                 type="text"
-                                placeholder="Grandfather name"
-                                name="grandfathername"
-                                value={values.grandfathername}
-                                onChange={handleChange}
-                              />
-                            </div>
-                          </Col>
-                          <Col lg={3} md={4}>
-                            <div className="form-group">
-                              <label>Last name: </label>
-                              <input
-                                type="text"
-                                placeholder="Last name:"
+                                placeholder={covert({ id: "lname" })}
                                 name="lastName"
                                 value={values.lastName}
                                 onChange={handleChange}
@@ -387,7 +337,7 @@ function MyVerticallyCenteredModal(props) {
                           </Col>
                           <Col lg={3} md={4}>
                             <div className="form-group">
-                              <label>Birthdate: </label>
+                              <label>{covert({ id: "onlydob" })}: </label>
                               <input
                                 type="date"
                                 placeholder="Last name:"
@@ -399,7 +349,7 @@ function MyVerticallyCenteredModal(props) {
                           </Col>
                           <Col lg={3} md={4}>
                             <div className="form-group">
-                              <label>Phone Number: </label>
+                              <label>{covert({ id: "Phone Number:" })}</label>
                               <input
                                 type="text"
                                 placeholder="091-556-3377"
@@ -411,113 +361,50 @@ function MyVerticallyCenteredModal(props) {
                           </Col>
                           <Col lg={3} md={4}>
                             <div className="form-group">
-                              <label>Residence City: </label>
-                              <input
-                                type="text"
-                                placeholder="Residence"
-                                name="residence"
-                                value={values.residence}
+                              <label>{covert({ id: "City" })}: </label>
+                              <select
+                                name="cityId"
+                                value={values.cityId}
                                 onChange={handleChange}
-                              />
-                            </div>
-                          </Col>
-                          <Col lg={3} md={4}>
-                            <div className="form-group">
-                              <label>District: </label>
-                              <input
-                                type="text"
-                                placeholder="district"
-                                name="district"
-                                value={values.district}
-                                onChange={handleChange}
-                              />
+                              >
+                                <option value={""} disabled selected>
+                                  {/* -- Select City -- */}
+                                  {covert({ id: "City" })}
+                                </option>
+
+                                {props.cityList &&
+                                  props.cityList?.map((v, ia) => (
+                                    <option key={ia} value={v?._id}>
+                                      {locale == "ar"
+                                        ? v?.arabicName
+                                        : v?.englishName}
+                                    </option>
+                                  ))}
+                              </select>
                             </div>
                           </Col>
 
                           <Col lg={3} md={4}>
                             <div className="form-group">
-                              <label>Institution ID </label>
-                              <input
-                                type="text"
-                                placeholder="InstitutionId"
-                                name="institutionID"
-                                value={values.institutionID}
-                                onChange={handleChange}
-                                readOnly
-                              />
-                            </div>
-                          </Col>
-                          <Col lg={3} md={4}>
-                            <div className="form-group">
-                              <label>Gender: </label>
+                              <label>{covert({ id: "gender" })}: </label>
                               <select
                                 name="gender"
                                 value={values.gender}
                                 onChange={handleChange}
                               >
                                 <option value={""} disabled selected>
-                                  -- Select Gender --
+                                  {/* -- Select City -- */}
+                                  {covert({ id: "Select Gender" })}
                                 </option>
-                                <option value={"male"}>male</option>
-                                <option value={"female"}>female</option>
-                              </select>
-                            </div>
-                          </Col>
-                          <Col lg={3} md={4}>
-                            <div className="form-group">
-                              <label>Employee ID: </label>
-                              <input
-                                type="text"
-                                placeholder="231432-314"
-                                name="empId"
-                                value={values.empId}
-                                onChange={handleChange}
-                              />
-                            </div>
-                          </Col>
-                          <Col lg={3} md={4}>
-                            <div className="form-group">
-                              <label>Passport Number: </label>
-                              <input
-                                type="text"
-                                placeholder="NFG90342"
-                                name="passport"
-                                value={values.passport}
-                                onChange={handleChange}
-                              />
-                            </div>
-                          </Col>
-                          <Col lg={3} md={4}>
-                            <div className="form-group">
-                              <label>Status </label>
-                              <select
-                                name="status"
-                                value={values.status}
-                                onChange={handleChange}
-                              >
-                                <option value="" selected>
-                                  --Select Status--
-                                </option>
-                                <option value="disabled">Disabled</option>
-                                <option value="active">Active</option>
-                              </select>
-                            </div>
-                          </Col>
-                          <Col lg={3} md={4}>
-                            <div className="form-group">
-                              <label
-                                name="identify_process"
-                                value={values.identify_process}
-                                onChange={handleChange}
-                              >
-                                Idnetification Process:{" "}
-                              </label>
-                              <select>
-                                <option value="" selected>
-                                  --Select Idnetification--
-                                </option>
-                                <option value="biometric">Biometric </option>
-                                <option value="eye-scan">Eye Scan </option>
+
+                                {props.genderList &&
+                                  props.genderList?.map((v, ia) => (
+                                    <option key={ia} value={v?._id}>
+                                      {locale == "ar"
+                                        ? v?.arabicName
+                                        : v?.englishName}
+                                    </option>
+                                  ))}
                               </select>
                             </div>
                           </Col>
@@ -531,7 +418,7 @@ function MyVerticallyCenteredModal(props) {
           </div>
         </div>
         <div className="add-fmy-mambr">
-          <h3>Family Members:</h3>
+          <h3>{covert({ id: "Family Members" })}:</h3>
           <div className="add-fmlt-btn">
             {tabsa &&
               tabsa?.map((val, ss) => (
@@ -543,7 +430,9 @@ function MyVerticallyCenteredModal(props) {
                   {val?.firstName}
                 </button>
               ))}
-            <button onClick={HandleAddFamilyMember}>Add family member</button>
+            <button onClick={HandleAddFamilyMember}>
+              {covert({ id: "Add Family Members" })}
+            </button>
           </div>
 
           {addFamilyMemberForm ? (
@@ -552,9 +441,9 @@ function MyVerticallyCenteredModal(props) {
                 <Row>
                   <Col lg={4} md={4}>
                     <div className="form-group">
-                      <label>First name: </label>
+                      <label>{covert({ id: "fname" })}: </label>
                       <input
-                        placeholder="First name:"
+                        placeholder={covert({ id: "fname" })}
                         type="text"
                         value={familyDetails?.firstName}
                         name="firstName"
@@ -565,23 +454,23 @@ function MyVerticallyCenteredModal(props) {
                   </Col>
                   <Col lg={4} md={4}>
                     <div className="form-group">
-                      <label>Middle name: </label>
+                      <label>{covert({ id: "secondName" })}: </label>
                       <input
                         type="text"
-                        value={familyDetails?.middleName}
-                        name="middleName"
-                        id="middleName"
+                        value={familyDetails?.secondName}
+                        name="secondName"
+                        id="secondName"
                         onChange={handleChanges}
-                        placeholder="Middle name:"
+                        placeholder={covert({ id: "secondName" })}
                         // onChange={(e)=>setFamilyDetails([...familyDetails, {...user[user.length], mobile_number: e.target.value }])}
                       />
                     </div>
                   </Col>
                   <Col lg={4} md={4}>
                     <div className="form-group">
-                      <label>Last name: </label>
+                      <label>{covert({ id: "lname" })}: </label>
                       <input
-                        placeholder="Last name:"
+                        placeholder={covert({ id: "lname" })}
                         type="text"
                         value={familyDetails?.lastName}
                         name="lastName"
@@ -592,7 +481,7 @@ function MyVerticallyCenteredModal(props) {
                   </Col>
                   <Col lg={4} md={4}>
                     <div className="form-group">
-                      <label>Birth Date: </label>
+                      <label>{covert({ id: "onlydob" })}: </label>
                       <input
                         type="date"
                         value={familyDetails?.birthdate}
@@ -604,7 +493,7 @@ function MyVerticallyCenteredModal(props) {
                   </Col>
                   <Col lg={4} md={4}>
                     <div className="form-group">
-                      <label>RelationShip: </label>
+                      <label>{covert({ id: "RelationShip" })}: </label>
                       <select
                         value={familyDetails.relationshipToSubscriber}
                         name="relationshipToSubscriber"
@@ -612,11 +501,17 @@ function MyVerticallyCenteredModal(props) {
                         onChange={handleChanges}
                       >
                         <option value="" disabled selected>
-                          --Select--{" "}
+                          {/* --Select--{" "} */}
+
+                          {covert({ id: "RelationShip" })}
                         </option>
-                        {relationship &&
-                          relationship?.map((val, i) => (
-                            <option value={val}>{val} </option>
+                        {props.relationship &&
+                          props.relationship?.map((val, i) => (
+                            <option value={val._id}>
+                              {locale == "ar"
+                                ? val.arabicName
+                                : val.englishName}{" "}
+                            </option>
                           ))}
                         {/* <option value="brother">Brother </option> */}
                       </select>
@@ -624,7 +519,7 @@ function MyVerticallyCenteredModal(props) {
                   </Col>
                   <Col lg={4} md={4}>
                     <div className="form-group">
-                      <label>Gender: </label>
+                      <label>{covert({ id: "gender" })}: </label>
                       <select
                         value={familyDetails.gender}
                         name="gender"
@@ -632,10 +527,15 @@ function MyVerticallyCenteredModal(props) {
                         onChange={handleChanges}
                       >
                         <option value="" selected disabled>
-                          --Select--
+                          {/* --Select-- */}
+                          {covert({ id: "Select Gender" })}
                         </option>
-                        <option value="male">Male </option>
-                        <option value="female">Female </option>
+                        {props.genderList &&
+                          props.genderList?.map((v, ia) => (
+                            <option key={ia} value={v?._id}>
+                              {locale == "ar" ? v?.arabicName : v?.englishName}
+                            </option>
+                          ))}
                       </select>
                     </div>
                   </Col>
@@ -645,25 +545,25 @@ function MyVerticallyCenteredModal(props) {
                     {indes !== undefined ? (
                       <>
                         <button className="add-fmy-btn" onClick={UpdateROw}>
-                          Update
+                          {covert({ id: "Update" })}
                         </button>
                         <button
                           className="add-fmy-btn-cancel"
                           onClick={CancelAddedData}
                         >
-                          Discard
+                          {covert({ id: "Cancel" })}
                         </button>
                       </>
                     ) : (
                       <>
                         <button className="add-fmy-btn" onClick={addNewRow}>
-                          Accept
+                          {covert({ id: "Accept" })}
                         </button>
                         <button
                           className="add-fmy-btn-cancel"
                           onClick={CancelData}
                         >
-                          Discard
+                          {covert({ id: "Cancel" })}
                         </button>
                       </>
                     )}
@@ -679,14 +579,14 @@ function MyVerticallyCenteredModal(props) {
       <Modal.Footer>
         <div className="can-sve">
           <button onClick={props.onHide} className="cls-btn-btn">
-            Cancel
+            {covert({ id: "Cancel" })}
           </button>
           <button
             className="add-fmy-btn"
             type="submit"
             form={key == "home" ? "new-form" : "exists-form"}
           >
-            Add
+            {covert({ id: "Save" })}
           </button>
         </div>
       </Modal.Footer>
@@ -696,40 +596,79 @@ function MyVerticallyCenteredModal(props) {
 
 function MyVerticallyInstitution(props) {
   const dispatch = useDispatch();
+  const { formatMessage: covert } = useIntl();
+
+  const [file, setFile] = useState([]);
+  const [files, setFiles] = useState([]);
+
+  function uploadSingleFile(e) {
+    let ImagesArray = Object.entries(e.target.files).map((e) =>
+      URL.createObjectURL(e[1])
+    );
+    setFile([...file, ...ImagesArray]);
+    if (e.target.files.length == "1") {
+      setFiles((pre) => [...pre, e.target.files[0]]);
+    } else {
+      setFiles((pre) => [...pre, ...e.target.files]);
+    }
+  }
+  function deleteFile(e) {
+    const s = file.filter((item, index) => index !== e);
+    const sa = files.filter((item, index) => index !== e);
+    setFile(s);
+    setFiles(sa);
+  }
 
   const handleSubmit = (values) => {
-    const data = {
-      name: values?.institutionName,
-      cityHQ: values?.city,
-      phoneNumber: values.phoneNumber,
-    };
-    dispatch(CreateInstitution(data));
+    // const data = {
+    //   name: values?.institutionName,
+    //   cityId: values?.city,
+    //   phoneNumber: values.phoneNumber,
+    //   email: values.email,
+    //   employeeCount: values.employeeCount,
+    //   file:files
+    // };
+
+    const formdata = new FormData();
+    formdata.append("name", values?.institutionName);
+    formdata.append("cityId", values?.city);
+    formdata.append("phoneNumber", values.phone);
+    formdata.append("email", values.email);
+    formdata.append("employeeCount", values.employeeCount);
+    formdata.append("file", files);
+    dispatch(CreateInstitution(formdata));
+    setFile();
+    setFiles();
     setTimeout(() => {
       props.onHide();
     }, 1200);
   };
+  const { locale } = useRouter();
   return (
     <Modal
       {...props}
       size="lg"
       aria-labelledby="contained-modal-title-vcenter"
       centered
+      className={locale == "ar" ? "add-medi-cntr new-rtl" : "add-medi-cntr"}
     >
       <Modal.Body className="p-0">
         <div className="add-new-bene institution">
-          <h4>Add New Institution</h4>
+          <h4>{covert({ id: "Add New Institution" })}</h4>
 
           <div className="add-denefi-marker">
             <div className="add-form p-0">
               <Formik
                 initialValues={{
                   institutionName: "",
-                  address: "",
                   city: "",
                   phone: "",
+                  employeeCount: "",
                   email: "",
-                  website: "",
-                  facebook: "",
+
+                  // address: "",
+                  // website: "",
+                  // facebook: "",
                 }}
                 onSubmit={handleSubmit}
                 // validationSchema={DoctorForm}
@@ -749,17 +688,18 @@ function MyVerticallyInstitution(props) {
                     <Row>
                       <Col lg={6} md={6}>
                         <div className="form-group">
-                          <label>Instituation Name: </label>
+                          <label>{covert({ id: "Name" })} </label>
                           <input
                             type="text"
-                            placeholder="Institution name"
+                            placeholder={covert({ id: "Name" })}
                             name="institutionName"
                             value={values.institutionName}
                             onChange={handleChange}
                           />
                         </div>
                       </Col>
-                      <Col lg={6} md={6}>
+
+                      {/* <Col lg={6} md={6}>
                         <div className="form-group">
                           <label>Street Address </label>
                           <input
@@ -770,22 +710,34 @@ function MyVerticallyInstitution(props) {
                             onChange={handleChange}
                           />
                         </div>
-                      </Col>
+                      </Col> */}
                       <Col lg={4} md={4}>
                         <div className="form-group">
-                          <label>City: </label>
-                          <input
-                            type="text"
-                            placeholder="Tripoli"
+                          <label>{covert({ id: "City" })} :</label>
+                          <select
                             name="city"
                             value={values.city}
                             onChange={handleChange}
-                          />
+                          >
+                            <option value={""} disabled selected>
+                              {/* -- Select City -- */}
+                              {covert({ id: "Select City" })}
+                            </option>
+
+                            {props.cityList &&
+                              props.cityList?.map((v, ia) => (
+                                <option key={ia} value={v?._id}>
+                                  {locale == "ar"
+                                    ? v?.arabicName
+                                    : v?.englishName}
+                                </option>
+                              ))}
+                          </select>
                         </div>
                       </Col>
-                      <Col lg={4} md={4}>
+                      <Col lg={6} md={6}>
                         <div className="form-group">
-                          <label>Phone Number: </label>
+                          <label>{covert({ id: "Phone Number" })}</label>
                           <input
                             type="text"
                             placeholder="091-556-3377"
@@ -795,9 +747,9 @@ function MyVerticallyInstitution(props) {
                           />
                         </div>
                       </Col>
-                      <Col lg={4} md={4}>
+                      <Col lg={6} md={6}>
                         <div className="form-group">
-                          <label>Email: </label>
+                          <label>{covert({ id: "Email" })} </label>
                           <input
                             type="text"
                             placeholder="sdaf@work.coom"
@@ -807,7 +759,21 @@ function MyVerticallyInstitution(props) {
                           />
                         </div>
                       </Col>
-                      <Col lg={6} md={4}>
+
+                      <Col lg={12} md={8}>
+                        <div className="form-group">
+                          <label>{covert({ id: "Employee Count" })}</label>
+                          <input
+                            type="text"
+                            placeholder="15"
+                            name="employeeCount"
+                            value={values.employeeCount}
+                            onChange={handleChange}
+                          />
+                        </div>
+                      </Col>
+
+                      {/* <Col lg={6} md={4}>
                         <div className="form-group">
                           <label>Website:</label>
                           <input
@@ -829,6 +795,45 @@ function MyVerticallyInstitution(props) {
                             value={values.facebook}
                           />
                         </div>
+                      </Col> */}
+
+                      <Col md={3}></Col>
+                      <Col md={6}>
+                        <div className="upld-img-section">
+                          <div className="form-group">
+                            <img
+                              src={"/assets/images/upload-img-1.svg"}
+                              alt="img"
+                            />
+                            <input
+                              type="file"
+                              disabled={file?.length == 5}
+                              className="form-control"
+                              onChange={uploadSingleFile}
+                              multiple
+                            />
+                          </div>
+                        </div>
+                        <div className="form-group preview">
+                          {file?.length > 0 &&
+                            file?.map((item, index) => {
+                              return (
+                                <div className="up-img-slct" key={item}>
+                                  <img src={item} alt="" />
+                                  <button
+                                    className="dtl-img-btn"
+                                    type="button"
+                                    onClick={() => deleteFile(index)}
+                                  >
+                                    <img
+                                      src={"/assets/images/dltee-img.svg"}
+                                      alt="img"
+                                    />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                        </div>
                       </Col>
                     </Row>
                   </form>
@@ -841,10 +846,10 @@ function MyVerticallyInstitution(props) {
       <Modal.Footer>
         <div className="can-sve mt-0">
           <button onClick={props.onHide} className="cls-btn-btn">
-            Cancel
+            {covert({ id: "Cancel" })}
           </button>
           <button className="add-fmy-btn" type="submit" form="form-data">
-            Add
+            {covert({ id: "Save" })}
           </button>
         </div>
       </Modal.Footer>
@@ -853,33 +858,234 @@ function MyVerticallyInstitution(props) {
 }
 
 function MedicalFileModal(props) {
+  const { formatMessage: covert } = useIntl();
+  const { locale } = useRouter();
   const dispatch = useDispatch();
-  const [medicalkey, setmedicalKey] = useState("home");
+  const [medicalkey, setmedicalKey] = useState("Allergies");
   const [fullscreen, setFullscreen] = useState(true);
   const [addMedicalForm, setAddMedicalDataForm] = useState(false);
+  const [list, setList] = useState([]);
 
-  // console.log("familymemberHealtDetail", props?.familymemberHealtDetail);
-  const handleSubmit = (values) => {
-    const data = {
-      name: values?.institutionName,
-      cityHQ: values?.city,
-      phoneNumber: values.phoneNumber,
+  const [allergy, setAllergy] = useState([]);
+  const [medical, setMedical] = useState([]);
+  const [chronic, setChronic] = useState([]);
+  const [surgeroy, setSurgeory] = useState([]);
+  const [clinic, setClinic] = useState([]);
+
+  const {
+    health_issue_family_member,
+    get_height_weight,
+    health_issue_family_member_allergy,
+    health_issue_family_member_clinic_visit,
+    health_issue_family_member_medical_test,
+    health_issue_family_member_surgeory,
+    health_issue_family_chronic,
+  } = useSelector((state) => state.fetchdata);
+  const { add_health_issue_family_res } = useSelector(
+    (state) => state.submitdata
+  );
+  // console.log("familymemberHealtDetail", props?.data);
+  useEffect(() => {
+    if (props.show) {
+      dispatch({ type: "HEALTH_ISSUE_FAMILY_MEMBER", payload: "" });
+      setList();
+      if (medicalkey == "Allergies") {
+        dispatch(FamilyMemberAllergies(props.bene_id, props?.data?._id));
+      }
+
+      if (medicalkey == "ChronicDisease") {
+        dispatch(FamilyMemberChronicDiseases(props.bene_id, props?.data?._id));
+      }
+
+      if (medicalkey == "ChronicMedicine") {
+        dispatch(FamilyMemberMedicalTests(props.bene_id, props?.data?._id));
+      }
+
+      if (medicalkey == "Surgery") {
+        dispatch(FamilyMemberSurgeryHistories(props.bene_id, props?.data?._id));
+      }
+
+      if (medicalkey == "Clinic") {
+        dispatch(FamilyMemberClinicalVisits(props.bene_id, props?.data?._id));
+      }
+
+      if (medicalkey == "MedicalTests") {
+        dispatch(FamilyMemberMedicalTests(props.bene_id, props?.data?._id));
+      }
+    }
+  }, [props.show, medicalkey]);
+
+  useEffect(() => {
+    if (health_issue_family_member_allergy) {
+      if (health_issue_family_member_allergy?.data?.statusCode == "200") {
+        setAllergy(health_issue_family_member_allergy?.data?.data?.objectArray);
+      } else if (
+        health_issue_family_member_allergy?.startsWith(
+          "beneficiaries validation faile"
+        )
+      ) {
+        Swal.fire({
+          icon: "error",
+          text: health_issue_family_member_allergy?.substr(0, 26),
+        });
+      }
+    }
+    return () => {
+      dispatch({ type: "HEALTH_ISSUE_FAMILY_MEMBER_ALLERGIES", payload: "" });
     };
-    dispatch(CreateInstitution(data));
-    setTimeout(() => {
-      props.onHide();
-    }, 1200);
+  }, [health_issue_family_member_allergy]);
+
+  useEffect(() => {
+    if (health_issue_family_member_clinic_visit) {
+      if (health_issue_family_member_clinic_visit?.data?.statusCode == "200") {
+        setClinic(
+          health_issue_family_member_clinic_visit?.data?.data?.objectArray
+        );
+      } else if (
+        health_issue_family_member_clinic_visit?.startsWith(
+          "beneficiaries validation faile"
+        )
+      ) {
+        Swal.fire({
+          icon: "error",
+          text: health_issue_family_member_clinic_visit?.substr(0, 26),
+        });
+      }
+    }
+    return () => {
+      dispatch({
+        type: "HEALTH_ISSUE_FAMILY_MEMBER_CLINIC_VISIT",
+        payload: "",
+      });
+    };
+  }, [health_issue_family_member_clinic_visit]);
+
+  useEffect(() => {
+    if (health_issue_family_member_medical_test) {
+      if (health_issue_family_member_medical_test?.data?.statusCode == "200") {
+        setMedical(
+          health_issue_family_member_medical_test?.data?.data?.objectArray
+        );
+      } else if (
+        health_issue_family_member_medical_test?.startsWith(
+          "beneficiaries validation faile"
+        )
+      ) {
+        Swal.fire({
+          icon: "error",
+          text: health_issue_family_member_medical_test?.substr(0, 26),
+        });
+      }
+    }
+    return () => {
+      dispatch({
+        type: "HEALTH_ISSUE_FAMILY_MEMBER_MEDICAL_TEST",
+        payload: "",
+      });
+    };
+  }, [health_issue_family_member_medical_test]);
+
+  useEffect(() => {
+    if (health_issue_family_member_surgeory) {
+      if (health_issue_family_member_surgeory?.data?.statusCode == "200") {
+        setSurgeory(
+          health_issue_family_member_surgeory?.data?.data?.objectArray
+        );
+      } else if (
+        health_issue_family_member_surgeory?.startsWith(
+          "beneficiaries validation faile"
+        )
+      ) {
+        Swal.fire({
+          icon: "error",
+          text: health_issue_family_member_surgeory?.substr(0, 26),
+        });
+      }
+    }
+    return () => {
+      dispatch({ type: "HEALTH_ISSUE_FAMILY_MEMBER_SURGEROY", payload: "" });
+    };
+  }, [health_issue_family_member_surgeory]);
+
+  useEffect(() => {
+    if (health_issue_family_chronic) {
+      if (health_issue_family_chronic?.data?.statusCode == "200") {
+        setChronic(health_issue_family_chronic?.data?.data?.objectArray);
+      } else if (
+        health_issue_family_chronic?.startsWith(
+          "beneficiaries validation faile"
+        )
+      ) {
+        Swal.fire({
+          icon: "error",
+          text: health_issue_family_chronic?.substr(0, 26),
+        });
+      }
+    }
+    return () => {
+      dispatch({ type: "HEALTH_ISSUE_FAMILY_MEMBER_CHRONIC", payload: "" });
+    };
+  }, [health_issue_family_chronic]);
+
+  const handleSubmit = (values) => {
+    const medicalFiles = {
+      weight: values?.weight ? values?.weight : null,
+      height: values?.height ? values?.height : null,
+      // gender: values.gender._id,
+      bloodType: values.bloodType ? values.bloodType : null,
+    };
+    dispatch(
+      UpdateHightWeightHelath(
+        props?.bene_id,
+        familymemberHeighdetails?._id,
+        medicalFiles
+      )
+    );
+    // setTimeout(() => {
+    //   props.onHide();
+    // }, 1200);
   };
-  const data = props?.data?.medicalFiles;
+
   let name =
     props?.data?.firstName +
     " " +
-    props?.data?.middleName +
+    props?.data?.secondName +
     " " +
     props?.data?.lastName;
 
   let gender = props?.data?.gender;
 
+  useEffect(() => {
+    if (add_health_issue_family_res) {
+      if (add_health_issue_family_res?.data?.statusCode == "200") {
+        setAddMedicalDataForm(false);
+        // dispatch(BenefeciaryList(limit, skip));
+      }
+    }
+    return () => {
+      dispatch({ type: "ADD_HEALTH_ISSUE_FAMILY_MEMBER", payload: "" });
+    };
+  }, [add_health_issue_family_res]);
+
+  const [familymemberHeighdetails, setFamilyMemeberHeightdata] = useState([]);
+  useEffect(() => {
+    if (get_height_weight) {
+      if (get_height_weight?.data?.statusCode == "200") {
+        setFamilyMemeberHeightdata(get_height_weight?.data?.data);
+      } else if (
+        get_height_weight?.startsWith("beneficiaries validation faile")
+      ) {
+        Swal.fire({
+          icon: "error",
+          text: get_height_weight?.substr(0, 26),
+        });
+      }
+    }
+    return () => {
+      dispatch({ type: "GET_HEIGHT_WEIGHT", payload: "" });
+    };
+  }, [get_height_weight]);
+  // console.log("familymemberHeighdetails",props?.bene_id)
   return (
     <>
       <Modal
@@ -887,7 +1093,9 @@ function MedicalFileModal(props) {
         size="lg"
         aria-labelledby="contained-modal-title-vcenter"
         fullscreen={fullscreen}
-        className="beneficiaries-full"
+        className={
+          locale == "ar" ? "beneficiaries-full new-rtl" : "beneficiaries-full"
+        }
       >
         <Modal.Body className="full-modl-screen">
           <Row className=" h-100">
@@ -896,17 +1104,23 @@ function MedicalFileModal(props) {
             {/* <Col lg={addMedicalForm ? 5 : 8} md={12} className="add-mdicl-file"> */}
             <Col lg={8} md={12} className="add-mdicl-file">
               <Modal.Header closeButton className="mb-4">
-                <Modal.Title>Medical file</Modal.Title>
+                <Modal.Title>{covert({ id: "Medical file" })}</Modal.Title>
               </Modal.Header>
               <div className="add-denefi-marker">
                 <div className="add-form p-0">
                   <Formik
                     initialValues={{
-                      id: data?.medicalFileId,
-                      fName: name,
-                      gender: gender,
-                      height: data?.height,
-                      weight: data?.weight,
+                      // fName: name,
+                      // gender: gender,
+                      height: familymemberHeighdetails?.height
+                        ? familymemberHeighdetails?.height
+                        : "",
+                      weight: familymemberHeighdetails?.weight
+                        ? familymemberHeighdetails?.weight
+                        : "",
+                      bloodType: familymemberHeighdetails?.bloodType
+                        ? familymemberHeighdetails?.bloodType
+                        : "",
                     }}
                     onSubmit={handleSubmit}
                     // validationSchema={DoctorForm}
@@ -916,70 +1130,91 @@ function MedicalFileModal(props) {
                       values,
                       handleSubmit,
                       isSubmitting,
+                      handleChange,
                       /* and other goodies */
                     }) => (
                       <form id="form-data" onSubmit={handleSubmit}>
                         <Row>
                           <Col md={6}>
                             <div className="form-group">
-                              <label>ID</label>
+                              <label>{covert({ id: "onlyid" })}</label>
                               <input
                                 type="text"
                                 name="id"
-                                value={values.id}
+                                value={familymemberHeighdetails?._id}
                                 readOnly
                               />
                             </div>
                           </Col>
                           <Col md={6}>
                             <div className="form-group">
-                              <label>Full Name</label>
+                              <label> {covert({ id: "fname" })}</label>
                               <input
                                 type="text"
-                                name="fName"
-                                value={values.fName}
+                                name="name"
+                                value={name}
                                 readOnly
                               />
                             </div>
                           </Col>
-                          <Col md={4}>
+                          {/* <Col md={4}>
                             <div className="form-group">
-                              <label>Gender</label>
+                              <label> {covert({ id: "gender" })}</label>
                               <select
                                 name="gender"
                                 value={values.gender}
-                                readOnly
+                                onChange={handleChange}
                               >
-                                <option>Male</option>
-                                <option>Female</option>
-                                <option>Other</option>
+                                {props.genderList &&
+                                  props.genderList?.map((v, ia) => (
+                                    <option key={ia} value={v?._id}>
+                                      {locale == "ar"
+                                        ? v?.arabicName
+                                        : v?.englishName}
+                                    </option>
+                                  ))}
                               </select>
                             </div>
-                          </Col>
+                          </Col> */}
                           <Col md={4}>
                             <div className="form-group">
-                              <label>Height</label>
+                              <label> {covert({ id: "Height" })}</label>
                               <input
                                 type="text"
                                 name="height"
                                 value={values.height}
-                                readOnly
+                                onChange={handleChange}
                               />
                             </div>
                           </Col>
                           <Col md={4}>
                             <div className="form-group">
-                              <label>Weight</label>
+                              <label> {covert({ id: "weight" })}</label>
                               <input
                                 type="number"
                                 name="weight"
                                 value={values.weight}
-                                readOnly
+                                onChange={handleChange}
+                              />
+                            </div>
+                          </Col>
+
+                          <Col md={4}>
+                            <div className="form-group">
+                              <label> {covert({ id: "bloodType" })}</label>
+                              <input
+                                type="text"
+                                name="bloodType"
+                                value={values.bloodType}
+                                onChange={handleChange}
                               />
                             </div>
                           </Col>
                         </Row>
                         <div className="can-sve mt-0 mb-3">
+                          <button className="add-fmy-btn" type="submit">
+                            {covert({ id: "Update" })}
+                          </button>
                           <button
                             className="add-fmy-btn"
                             type="button"
@@ -988,7 +1223,9 @@ function MedicalFileModal(props) {
                               setAddMedicalDataForm(!addMedicalForm);
                             }}
                           >
-                            {!addMedicalForm ? "Add" : "Close"}
+                            {!addMedicalForm
+                              ? covert({ id: "add" })
+                              : covert({ id: "Cancel" })}
                             {/* Add */}
                           </button>
                         </div>
@@ -1000,96 +1237,106 @@ function MedicalFileModal(props) {
                             defaultActiveKey="Allergies"
                             id="uncontrolled-tab-example"
                             className="add-bene-tabs"
-                            onSelect={(m) => setmedicalKey(m)}
+                            onSelect={(m) => {
+                              setList();
+                              setTimeout(() => {
+                                setmedicalKey(m);
+                              }, 1000);
+                            }}
                           >
-                            <Tab eventKey="Allergies" title="Allergies">
-                              {props.familymemberHealtDetail?.allergies?.map(
-                                (val, is) => (
-                                  <div className="view-dtl-data" key={is}>
-                                    <div>
-                                      <h1>
-                                        {val?.allergyName}
-                                        {val?.file !== null &&
-                                        val?.file &&
-                                        val?.thumbnail &&
-                                        val?.thumbnail !== null ? (
-                                          <div className="thumnbnail">
-                                            <Link
-                                              href={val?.file}
-                                              target="_blank"
-                                            >
-                                              <img src={val?.thumbnail} />
-                                            </Link>
-                                          </div>
-                                        ) : (
-                                          ""
-                                        )}
-                                      </h1>
-                                    </div>
-                                    <div>
-                                      <span className="notes-heatj">
-                                        Notes :
-                                      </span>
-                                      <p>{val?.notes}</p>
-                                    </div>
+                            <Tab
+                              eventKey="Allergies"
+                              title={covert({ id: "Allergies" })}
+                            >
+                              {allergy?.map((val, is) => (
+                                <div className="view-dtl-data" key={is}>
+                                  <div>
+                                    <h1>
+                                      {val?.title}
+                                      {val?.fileLink !== "" &&
+                                      val?.fileLink &&
+                                      val?.thumbnailLink &&
+                                      val?.thumbnailLink !== null ? (
+                                        <div className="thumnbnail">
+                                          <Link
+                                            href={val?.fileLink}
+                                            target="_blank"
+                                          >
+                                            <img src={val?.thumbnailLink} />
+                                          </Link>
+                                        </div>
+                                      ) : (
+                                        ""
+                                      )}
+                                    </h1>
                                   </div>
-                                )
-                              )}
+                                  <div>
+                                    <span className="notes-heatj">
+                                      {covert({ id: "Notes" })} :
+                                    </span>
+                                    <p>{val?.notes}</p>
+                                  </div>
+                                </div>
+                              ))}
                             </Tab>
                             <Tab
                               eventKey="ChronicDisease"
-                              title="Chronic Disease"
+                              title={covert({ id: "Chronic Disease" })}
                             >
-                              {props.familymemberHealtDetail?.chronicDiseases?.map(
-                                (val, is) => (
-                                  <div className="view-dtl-data" key={is}>
-                                    <div>
-                                      <h1>
-                                        {val?.DiseaseName}
-                                        {val?.file !== null &&
-                                        val?.file &&
-                                        val?.thumbnail &&
-                                        val?.thumbnail !== null ? (
-                                          <div className="thumnbnail">
-                                            <Link
-                                              href={val?.file}
-                                              target="_blank"
-                                            >
-                                              <img src={val?.thumbnail} />
-                                            </Link>
-                                          </div>
-                                        ) : (
-                                          ""
-                                        )}
-                                      </h1>
-                                    </div>
-                                    <div>
-                                      <ul className="crd-dtl">
-                                        <li>
-                                          <span>Diagnosed On :</span>{" "}
-                                          {moment(val?.diagnosisDate).format(
-                                            "LL"
-                                          )}
-                                        </li>
-                                        <li>
-                                          <span>Diagnosed By :</span>{" "}
-                                          {val?.diagnosedBy}
-                                        </li>
-                                      </ul>
-                                      <span className="notes-heatj">
-                                        Notes :
-                                      </span>
-                                      <p>{val?.notes}</p>
-                                    </div>
+                              {chronic?.map((val, is) => (
+                                <div className="view-dtl-data" key={is}>
+                                  <div>
+                                    <h1>
+                                      {/* {val?.DiseaseName} */}
+                                      {val?.title}
+                                      {val?.fileLink !== null &&
+                                      val?.fileLink &&
+                                      val?.thumbnailLink &&
+                                      val?.thumbnailLink !== null ? (
+                                        <div className="thumnbnail">
+                                          <Link
+                                            href={val?.fileLink}
+                                            target="_blank"
+                                          >
+                                            <img src={val?.thumbnailLink} />
+                                          </Link>
+                                        </div>
+                                      ) : (
+                                        ""
+                                      )}
+                                    </h1>
                                   </div>
-                                )
-                              )}
+                                  <div>
+                                    <ul className="crd-dtl">
+                                      <li>
+                                        <span>
+                                          {" "}
+                                          {covert({ id: "DiagnoesOn" })} :
+                                        </span>{" "}
+                                        {moment(val?.diagnosisDate).format(
+                                          "LL"
+                                        )}
+                                      </li>
+                                      <li>
+                                        <span>
+                                          {covert({ id: "DiagnoesBy" })}:
+                                        </span>{" "}
+                                        {val?.doctorName}
+                                      </li>
+                                    </ul>
+                                    <span className="notes-heatj">
+                                      {covert({ id: "Notes" })}:
+                                    </span>
+                                    <p>{val?.notes}</p>
+                                  </div>
+                                </div>
+                              ))}
                             </Tab>
                             <Tab
                               eventKey="ChronicMedicine"
-                              title="Chronic Medicine"
+                              title={covert({ id: "Chronic Medicine" })}
                             >
-                              <div className="add-form">
+                              {/* <div className="add-form">
                                 <Formik
                                   initialValues={{
                                     firtname: "",
@@ -1099,7 +1346,7 @@ function MedicalFileModal(props) {
                                     birthday: "",
                                     phone: "",
                                     email: "",
-                                    residence: "",
+                                    cityId: "",
                                     district: "",
                                     gender: "",
                                     empId: "",
@@ -1110,7 +1357,7 @@ function MedicalFileModal(props) {
                                       props?.institutiondata?.split("-")[1],
                                   }}
                                   onSubmit={handleSubmit}
-                                  // validationSchema={DoctorForm}
+
                                   enableReinitialize
                                 >
                                   {({
@@ -1121,19 +1368,24 @@ function MedicalFileModal(props) {
                                     handleBlur,
                                     handleSubmit,
                                     isSubmitting,
-                                    /* and other goodies */
+                                
                                   }) => (
                                     <form id="new-form" onSubmit={handleSubmit}>
                                       <Row>
                                         <Col md={12}>
                                           <div className="form-group">
-                                            <label>Title</label>
+                                            <label>
+                                              {" "}
+                                              {covert({ id: "Title" })}
+                                            </label>
                                             <input type="text" />
                                           </div>
                                         </Col>
                                         <Col md={12}>
                                           <div className="form-group">
-                                            <label>Note</label>
+                                            <label>
+                                              {covert({ id: "Notes" })}
+                                            </label>
                                             <textarea></textarea>
                                           </div>
                                         </Col>
@@ -1141,220 +1393,232 @@ function MedicalFileModal(props) {
                                     </form>
                                   )}
                                 </Formik>
-                              </div>
+                              </div> */}
                             </Tab>
-                            <Tab eventKey="Surgery" title="Surgery History">
-                              {props.familymemberHealtDetail?.surgeryHistory?.map(
-                                (val, is) => (
-                                  <div className="view-dtl-data" key={is}>
-                                    <div>
-                                      <h1>
-                                        {val?.SurgeryName}
-                                        {val?.file !== null &&
-                                        val?.file &&
-                                        val?.thumbnail &&
-                                        val?.thumbnail !== null ? (
-                                          <div className="thumnbnail">
-                                            <Link
-                                              href={val?.file}
-                                              target="_blank"
-                                            >
-                                              <img src={val?.thumbnail} />
-                                            </Link>
-                                          </div>
-                                        ) : (
-                                          ""
-                                        )}
-                                      </h1>
-                                    </div>
-                                    <div>
-                                      <ul className="crd-dtl">
-                                        <li>
-                                          <span>Date:</span>{" "}
-                                          {moment(val?.SurgeryDate).format(
-                                            "LL"
-                                          )}
-                                        </li>
-                                        <li>
-                                          <span>HealthCenter:</span>{" "}
-                                          {val?.medicalCenterName}
-                                        </li>
-                                        <li>
-                                          <span>Doctor:</span> {val?.doctorName}
-                                        </li>
-                                      </ul>
-
-                                      <span className="notes-heatj">
-                                        Notes :
-                                      </span>
-                                      <p>{val?.notes}</p>
-                                    </div>
-                                  </div>
-                                )
-                              )}
-                            </Tab>
-                            <Tab eventKey="Clinic" title="Clinic Visit">
-                              {props.familymemberHealtDetail?.clinicalVisits?.map(
-                                (val, is) => (
-                                  <div className="view-dtl-data" key={is}>
-                                    <div>
-                                      <h1>
-                                        {val?.visitType}
-
-                                        {val?.file !== null &&
-                                        val?.file &&
-                                        val?.thumbnail &&
-                                        val?.thumbnail !== null ? (
-                                          <div className="thumnbnail">
-                                            <Link
-                                              href={val?.file}
-                                              target="_blank"
-                                            >
-                                              <img src={val?.thumbnail} />
-                                            </Link>
-                                          </div>
-                                        ) : (
-                                          ""
-                                        )}
-                                      </h1>
-                                    </div>
-                                    <div>
-                                      <ul className="crd-dtl">
-                                        <li>
-                                          <span>Date:</span>{" "}
-                                          {moment(val?.visitDate).format("LL")}
-                                        </li>
-                                        <li>
-                                          <span>HealthCenter:</span>{" "}
-                                          {val?.centerName}
-                                        </li>
-                                        <li>
-                                          <span>Doctor:</span> {val?.doctorName}
-                                        </li>
-                                      </ul>
-
-                                      <span className="notes-heatj">
-                                        Notes :
-                                      </span>
-                                      <p>{val?.notes}</p>
-                                    </div>
-                                  </div>
-                                )
-                              )}
-                            </Tab>
-                            <Tab eventKey="MedicalTests" title="Medical Tests">
-                              {props.familymemberHealtDetail?.medicalTests?.map(
-                                (val, is) => (
-                                  <div className="view-dtl-data" key={is}>
-                                    <div>
-                                      <h1>
-                                        {val?.labReportCategory}
-                                        {val?.file !== null &&
-                                        val?.file &&
-                                        val?.thumbnail &&
-                                        val?.thumbnail !== null ? (
-                                          <div className="thumnbnail">
-                                            <Link
-                                              href={val?.file}
-                                              target="_blank"
-                                            >
-                                              <img src={val?.thumbnail} />
-                                            </Link>
-                                          </div>
-                                        ) : (
-                                          ""
-                                        )}
-                                      </h1>{" "}
-                                      <div className="medical-test">
-                                        <p>{val?.centerName}</p>
-                                        <span>
-                                          {val?.city} , {val?.district}
-                                        </span>
-                                      </div>
-                                    </div>
-
-                                    <div>
-                                      <ul className="crd-dtl">
-                                        <li>
-                                          <span>ReportDate:</span>{" "}
-                                          {moment(val?.reportDate).format("LL")}
-                                        </li>
-                                      </ul>
-                                    </div>
-
-                                    {val?.testInformation?.map((value, s) =>
-                                      value?.result?.reference &&
-                                      value?.result?.reference !== "" ? (
-                                        <div className="tst-pro clr-bg-sect">
-                                          <Row>
-                                            <Col md={6}>
-                                              <div className="nme-man">
-                                                <label>{value?.testName}</label>
-                                                <p>
-                                                  ({value?.acronym})
-                                                  <span>
-                                                    {value?.result?.level}
-                                                  </span>
-                                                </p>
-                                              </div>
-                                            </Col>
-                                            <Col md={6} className="ali-cntr">
-                                              <div className="">
-                                                <h6>
-                                                  <span>Value: </span>
-                                                  {value?.result?.value}
-                                                </h6>
-                                                <h6>
-                                                  <span>Reference:</span>
-                                                  {value?.result?.reference}
-                                                </h6>
-                                              </div>
-                                            </Col>
-                                          </Row>
+                            <Tab
+                              eventKey="Surgery"
+                              title={covert({ id: "Surgery History" })}
+                            >
+                              {surgeroy?.map((val, is) => (
+                                <div className="view-dtl-data" key={is}>
+                                  <div>
+                                    <h1>
+                                      {/* {val?.SurgeryName} */}
+                                      {val?.title}
+                                      {val?.fileLink !== null &&
+                                      val?.fileLink &&
+                                      val?.thumbnailLink &&
+                                      val?.thumbnailLink !== null ? (
+                                        <div className="thumnbnail">
+                                          <Link
+                                            href={val?.fileLink}
+                                            target="_blank"
+                                          >
+                                            <img src={val?.thumbnailLink} />
+                                          </Link>
                                         </div>
                                       ) : (
-                                        <div className="tst-pro" key={s}>
-                                          <Row>
-                                            <Col md={6}>
-                                              <div className="nme-man">
-                                                <label>{value?.testName}</label>
-                                                <p>
-                                                  ({value?.acronym})
-                                                  <span>
-                                                    {value?.result?.level}
-                                                  </span>
-                                                </p>
-                                              </div>
-                                            </Col>
-                                            <Col md={6}>
-                                              <p>
-                                                {value?.result?.upperRange}{" "}
-                                                <span>
-                                                  {" "}
-                                                  {value?.result?.unit}
-                                                </span>
-                                              </p>
-                                              <div className="prog">
-                                                <div
-                                                  className="pro-line"
-                                                  style={{ width: "50%" }}
-                                                ></div>
-                                              </div>
-                                              <p>
-                                                {value?.result?.lowerRange}{" "}
-                                                <span>
-                                                  {" "}
-                                                  {value?.result?.value}
-                                                </span>
-                                              </p>
-                                            </Col>
-                                          </Row>
-                                        </div>
-                                      )
-                                    )}
+                                        ""
+                                      )}
+                                    </h1>
                                   </div>
-                                )
-                              )}
+                                  <div>
+                                    <ul className="crd-dtl">
+                                      <li>
+                                        <span>{covert({ id: "Date" })}:</span>{" "}
+                                        {moment(val?.SurgeryDate).format("LL")}
+                                      </li>
+                                      <li>
+                                        <span>
+                                          {covert({ id: "Health Center" })}:
+                                        </span>{" "}
+                                        {val?.centerName}
+                                      </li>
+                                      <li>
+                                        <span>{covert({ id: "Doctor" })}:</span>{" "}
+                                        {val?.doctorName}
+                                      </li>
+                                    </ul>
+
+                                    <span className="notes-heatj">
+                                      {covert({ id: "Notes" })} :
+                                    </span>
+                                    <p>{val?.notes}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </Tab>
+                            <Tab
+                              eventKey="Clinic"
+                              title={covert({ id: "Clinic Visit" })}
+                            >
+                              {clinic?.map((val, is) => (
+                                <div className="view-dtl-data" key={is}>
+                                  <div>
+                                    <h1>
+                                      {/* {val?.visitType} */}
+                                      {val?.visitType}
+
+                                      {val?.fileLink !== null &&
+                                      val?.fileLink &&
+                                      val?.thumbnailLink &&
+                                      val?.thumbnailLink !== null ? (
+                                        <div className="thumnbnail">
+                                          <Link
+                                            href={val?.fileLink}
+                                            target="_blank"
+                                          >
+                                            <img src={val?.thumbnailLink} />
+                                          </Link>
+                                        </div>
+                                      ) : (
+                                        ""
+                                      )}
+                                    </h1>
+                                  </div>
+                                  <div>
+                                    <ul className="crd-dtl">
+                                      <li>
+                                        <span>{covert({ id: "Date" })}:</span>{" "}
+                                        {moment(val?.visitDate).format("LL")}
+                                      </li>
+                                      <li>
+                                        <span>
+                                          {covert({ id: "Health Center" })}:
+                                        </span>{" "}
+                                        {val?.centerName}
+                                      </li>
+                                      <li>
+                                        <span>{covert({ id: "Doctor" })}:</span>{" "}
+                                        {val?.doctorName}
+                                      </li>
+                                    </ul>
+
+                                    <span className="notes-heatj">
+                                      {covert({ id: "Notes" })} :
+                                    </span>
+                                    <p>{val?.notes}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </Tab>
+                            <Tab
+                              eventKey="MedicalTests"
+                              title={covert({ id: "Medical Tests" })}
+                            >
+                              {medical?.map((val, is) => (
+                                <div className="view-dtl-data" key={is}>
+                                  <div>
+                                    <h1>
+                                      {/* {val?.labReportCategory} */}
+                                      {val?.title}
+                                      {val?.fileLink !== null &&
+                                      val?.fileLink &&
+                                      val?.thumbnailLink &&
+                                      val?.thumbnailLink !== null ? (
+                                        <div className="thumnbnail">
+                                          <Link
+                                            href={val?.fileLink}
+                                            target="_blank"
+                                          >
+                                            <img src={val?.thumbnailLink} />
+                                          </Link>
+                                        </div>
+                                      ) : (
+                                        ""
+                                      )}
+                                    </h1>{" "}
+                                    <div className="medical-test">
+                                      <p>{val?.centerName}</p>
+                                      <span>
+                                        {val?.city} , {val?.district}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <ul className="crd-dtl">
+                                      <li>
+                                        <span>
+                                          {covert({ id: "Report Date" })}:
+                                        </span>{" "}
+                                        {moment(val?.reportDate).format("LL")}
+                                      </li>
+                                    </ul>
+                                  </div>
+
+                                  {val?.testInformation?.map((value, s) =>
+                                    value?.result?.reference &&
+                                    value?.result?.reference !== "" ? (
+                                      <div className="tst-pro clr-bg-sect">
+                                        <Row>
+                                          <Col md={6}>
+                                            <div className="nme-man">
+                                              <label>{value?.testName}</label>
+                                              <p>
+                                                ({value?.acronym})
+                                                <span>
+                                                  {value?.result?.level}
+                                                </span>
+                                              </p>
+                                            </div>
+                                          </Col>
+                                          <Col md={6} className="ali-cntr">
+                                            <div className="">
+                                              <h6>
+                                                <span>Value: </span>
+                                                {value?.result?.value}
+                                              </h6>
+                                              <h6>
+                                                <span>Reference:</span>
+                                                {value?.result?.reference}
+                                              </h6>
+                                            </div>
+                                          </Col>
+                                        </Row>
+                                      </div>
+                                    ) : (
+                                      <div className="tst-pro" key={s}>
+                                        <Row>
+                                          <Col md={6}>
+                                            <div className="nme-man">
+                                              <label>{value?.testName}</label>
+                                              <p>
+                                                ({value?.acronym})
+                                                <span>
+                                                  {value?.result?.level}
+                                                </span>
+                                              </p>
+                                            </div>
+                                          </Col>
+                                          <Col md={6}>
+                                            <p>
+                                              {value?.result?.upperRange}{" "}
+                                              <span>
+                                                {" "}
+                                                {value?.result?.unit}
+                                              </span>
+                                            </p>
+                                            <div className="prog">
+                                              <div
+                                                className="pro-line"
+                                                style={{ width: "50%" }}
+                                              ></div>
+                                            </div>
+                                            <p>
+                                              {value?.result?.lowerRange}{" "}
+                                              <span>
+                                                {" "}
+                                                {value?.result?.value}
+                                              </span>
+                                            </p>
+                                          </Col>
+                                        </Row>
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+                              ))}
                             </Tab>
                           </Tabs>
                         </div>
@@ -1375,44 +1639,58 @@ function MedicalFileModal(props) {
         data={props?.data}
         beni_id={props?.bene_id}
         setMedicalModal={props.setMedicalModal}
+        familydata={props.data}
         setAddMedicalDataForm={setAddMedicalDataForm}
+        cityList={props.cityList}
       />
     </>
   );
 }
 
 const Benificiary = () => {
+  const { locale } = useRouter();
+  const { formatMessage: covert } = useIntl();
   const [modalShow, setModalShow] = useState(false);
-
+  const [benifiacryEdit, setBenefiaryModal] = useState(false);
+  const [institutionList, setInstitutionList] = useState([]);
+  const [relationship, setrelationshipList] = useState([]);
   const [modalShow1, setModalShow1] = useState(false);
   const [benef_lists, setBeneList] = useState([]);
+  const [genderList, setGenderList] = useState([]);
+  const [cityList, setCityList] = useState([]);
   const [detatilsbtn, setDetailsButton] = useState(false);
   const [top, setTop] = useState();
   const [stopapi, setStopAPi] = useState(false);
   const [loader, setLoader] = useState(false);
   const [benefitbtn, setbenifitpolicyButton] = useState(false);
   const [showalergies, setAlergiesShow] = useState(false);
-  const [limit] = useState(5);
+  const [limit] = useState(10);
   const [skip, setSKip] = useState(0);
   const [secondRow, setSecondRow] = useState([]);
   const [alergies, setAlergies] = useState([]);
   const [thirdRow, setThirdRow] = useState([]);
-  const [institutionList, setInstitutionList] = useState([]);
+
   const [institutiondata, setInstitution] = useState();
   const [medicaldmodal, setMedicalModal] = useState(false);
+  const [editsubscriber, setEditModalofSubScriber] = useState(false);
+  const [beneficarydataEdit, setBeneficaryData] = useState([]);
   const [familymember, setFamilyMember] = useState();
   const [beniId, setBeneID] = useState();
 
   const dispatch = useDispatch();
+  const { gender_list, get_height_weight, city_list } = useSelector(
+    (state) => state.fetchdata
+  );
+  const { update_height_width_res } = useSelector((state) => state.submitdata);
   const setShowRow = (e, row) => {
-    e.preventDefault();
+    // e.preventDefault();
 
     if (secondRow === row?._id) {
       setSecondRow();
       setBeneID();
     } else {
       setSecondRow(row?._id);
-      setBeneID(row?.beneficiaryId);
+      setBeneID(row?._id);
     }
   };
 
@@ -1445,9 +1723,14 @@ const Benificiary = () => {
     // console.log("show all",)
   };
 
-  const APICall = () => {
+  useEffect(() => {
+    dispatch(GenderList(0, 500));
+    dispatch(CityList(0, 500));
+  }, [update_height_width_res]);
+
+  const APICall = (value) => {
     if (stopapi == false) {
-      dispatch(BenefeciaryList(limit, skip));
+      dispatch(BenefeciaryList(limit, skip, value));
     } else {
       setLoader(false);
     }
@@ -1458,14 +1741,57 @@ const Benificiary = () => {
     APICall();
   }, [skip]);
 
+  const debounce = (func) => {
+    let timer;
+    return function (...args) {
+      const context = this;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        func.apply(context, args);
+      }, 500);
+    };
+  };
+
+  const optimizedFn = useCallback(
+    debounce((valu) => {
+      setLoader(true);
+      APICall(valu);
+      setBeneList([]);
+    }),
+    []
+  );
+
   useEffect(() => {
     dispatch(GetInstitutionList());
   }, []);
+  const { beneficary_relation_list } = useSelector((state) => state.fetchdata);
+
+  useEffect(() => {
+    if (beneficary_relation_list) {
+      if (beneficary_relation_list?.data?.statusCode == "200") {
+        setrelationshipList(beneficary_relation_list?.data?.data?.objectArray);
+      } else {
+        Swal.fire({
+          icon: "error",
+          text: "Something Went Wrong In Relation API",
+        });
+      }
+    }
+    return () => {
+      dispatch({ type: "BENE_RETALTION_LIST", payload: "" });
+    };
+  }, [beneficary_relation_list]);
 
   const { benef_list, institution_list, health_issue_family_member } =
     useSelector((state) => state.fetchdata);
-  const { add_benef_res, add_instition_res, health_issue_family_res } =
-    useSelector((state) => state.submitdata);
+  const {
+    add_benef_res,
+    add_instition_res,
+    health_issue_family_res,
+    update_benef_Res,
+    add_health_issue_family_res,
+  } = useSelector((state) => state.submitdata);
 
   const [count, setObjectCount] = useState();
 
@@ -1511,12 +1837,8 @@ const Benificiary = () => {
 
   useEffect(() => {
     if (institution_list) {
-      if (
-        institution_list?.data?.codeStatus == "200" ||
-        institution_list?.data?.object ||
-        institution_list?.data?.objectCount
-      ) {
-        setInstitutionList(institution_list?.data?.institutes);
+      if (institution_list?.data?.statusCode == "200") {
+        setInstitutionList(institution_list?.data?.data?.objectArray);
 
         // if (skip == 0) {
         //
@@ -1542,32 +1864,23 @@ const Benificiary = () => {
 
   useEffect(() => {
     if (add_benef_res) {
-      if (
-        add_benef_res?.data?.codeStatus == "200" ||
-        add_benef_res?.data?.codeStatus == "201" ||
-        add_benef_res?.data?.object
-      ) {
+      if (add_benef_res?.data?.statusCode == "200") {
         Swal.fire({
           icon: "success",
           text: add_benef_res?.data?.message,
         });
-        // setSKip(0);
+
         setStopAPi(false);
-        // setBeneList([]);
-        let skpips = skip;
+
         dispatch(BenefeciaryList(limit, skip));
-      } else if (add_benef_res?.startsWith("beneficiaries validation")) {
+      } else if (
+        add_benef_res?.data?.error?.startsWith("subscribers validation")
+      ) {
         Swal.fire({
           icon: "error",
-          text: add_benef_res?.substr(0, 31),
+          text: add_benef_res?.data?.error?.substr(0, 31),
         });
       }
-      // else {
-      //   Swal.fire({
-      //     icon: "error",
-      //     text: add_benef_res?.data?.message,
-      //   });
-      // }
     }
     return () => {
       dispatch({ type: "ADD_BENEFICIARY_DATA", payload: "" });
@@ -1576,13 +1889,10 @@ const Benificiary = () => {
 
   useEffect(() => {
     if (add_instition_res) {
-      if (
-        add_instition_res?.data?.codeStatus == "200" ||
-        add_instition_res?.data?.object
-      ) {
+      if (add_instition_res?.data?.statusCode == "200") {
         Swal.fire({
           icon: "success",
-          text: "institution created successfully",
+          text: add_instition_res?.data?.message,
         });
         dispatch(GetInstitutionList());
       } else if (
@@ -1593,18 +1903,98 @@ const Benificiary = () => {
           text: add_instition_res?.substr(0, 26),
         });
       }
-
-      // else {
-      //   Swal.fire({
-      //     icon: "error",
-      //     text: "Something Went Wrong",
-      //   });
-      // }
     }
     return () => {
       dispatch({ type: "ADD_INSTITUTION_ITEM", payload: "" });
     };
   }, [add_instition_res]);
+
+  useEffect(() => {
+    if (add_health_issue_family_res) {
+      if (add_health_issue_family_res?.data?.statusCode == "200") {
+        Swal.fire({
+          position: "center",
+          icon: "success",
+          title: add_health_issue_family_res?.data?.message,
+          timer: 2000,
+        });
+        // console.log("medicla", medicalkey);
+
+        dispatch(FamilyMemberAllergies(beniId, familymember?._id));
+
+        dispatch(FamilyMemberMedicalTests(beniId, familymember?._id));
+        dispatch(FamilyMemberChronicDiseases(beniId, familymember?._id));
+
+        dispatch(FamilyMemberSurgeryHistories(beniId, familymember?._id));
+        dispatch(FamilyMemberClinicalVisits(beniId, familymember?._id));
+      } else if (
+        add_health_issue_family_res?.startsWith(
+          "beneficiaries validation faile"
+        )
+      ) {
+        Swal.fire({
+          icon: "error",
+          text: add_health_issue_family_res?.substr(0, 26),
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          text: "Something Went Wrong",
+        });
+      }
+    }
+    return () => {
+      dispatch({ type: "ADD_HEALTH_ISSUE_FAMILY_MEMBER", payload: "" });
+    };
+  }, [add_health_issue_family_res]);
+
+  useEffect(() => {
+    if (update_benef_Res) {
+      if (update_benef_Res?.data?.statusCode == "200") {
+        Swal.fire({
+          icon: "success",
+          text: update_benef_Res?.data?.message,
+        });
+
+        dispatch(BenefeciaryList(limit, skip));
+      } else if (update_benef_Res?.startsWith("beneficiaries validation")) {
+        Swal.fire({
+          icon: "error",
+          text: update_benef_Res?.substr(0, 31),
+        });
+      }
+    }
+    dispatch({ type: "UPDATE_BENEFICIARY_DATA", payload: "" });
+
+    return () => {
+      dispatch({ type: "UPDATE_BENEFICIARY_DATA", payload: "" });
+    };
+  }, [update_benef_Res]);
+
+  useEffect(() => {
+    if (update_height_width_res) {
+      if (update_height_width_res?.data?.statusCode == "200") {
+        Swal.fire({
+          icon: "success",
+          text: update_height_width_res?.data?.message,
+        });
+
+        dispatch(BenefeciaryList(limit, skip));
+      } else if (
+        update_height_width_res?.startsWith("beneficiaries validation")
+      ) {
+        Swal.fire({
+          icon: "error",
+          text: update_height_width_res?.substr(0, 31),
+        });
+      }
+    }
+    dispatch({ type: "UPDATE_HEIGHT_WEIGHT", payload: "" });
+
+    return () => {
+      dispatch({ type: "UPDATE_HEIGHT_WEIGHT", payload: "" });
+    };
+  }, [update_height_width_res]);
 
   // function handleScroll(e) {
   //   e.preventDefault();
@@ -1637,21 +2027,6 @@ const Benificiary = () => {
 
   const [familymemberHealtDetail, setFamilyMemeberHealthData] = useState([]);
   useEffect(() => {
-    // console.log("data", count, benef_lists?.length)
-
-    // if (count == data?.length) {
-    //   setStopAPi(true);
-    //   setLoadMoreAlwways(false)
-    // }
-    // if (data_res?.data?.data?.objectCount >= data?.length) {
-    // if (count > data?.length ) {
-    //   setStopAPi(false);
-    //   setLoadMoreAlwways(true)
-    // }
-    // if (count > data?.length) {
-    //   setStopAPi(false);
-    // }
-
     if (count <= skip + limit) {
       setStopAPi(true);
       // setLoadMoreAlwways(false)
@@ -1660,33 +2035,68 @@ const Benificiary = () => {
 
   useEffect(() => {
     if (medicaldmodal && familymember) {
-      dispatch(
-        FamilyMemberHealthIssueDetails(beniId, familymember?.familyMemberId)
-      );
+      dispatch(getHightWeightHelath(beniId, familymember?._id));
     }
   }, [medicaldmodal]);
 
-  useEffect(() => {
-    if (health_issue_family_member) {
-      if (health_issue_family_member?.data?.statusCode == "200") {
-        setFamilyMemeberHealthData(health_issue_family_member?.data?.data);
-      } else if (
-        health_issue_family_member?.startsWith("beneficiaries validation faile")
-      ) {
-        Swal.fire({
-          icon: "error",
-          text: health_issue_family_member?.substr(0, 26),
-        });
-      }
-    }
-    return () => {
-      dispatch({ type: "HEALTH_ISSUE_FAMILY_MEMBER", payload: "" });
-    };
-  }, [health_issue_family_member]);
+  // useEffect(() => {
+  //   if (health_issue_family_member) {
+  //     if (health_issue_family_member?.data?.statusCode == "200") {
+  //       setFamilyMemeberHealthData(health_issue_family_member?.data?.data);
+  //     } else if (
+  //       health_issue_family_member?.startsWith("beneficiaries validation faile")
+  //     ) {
+  //       Swal.fire({
+  //         icon: "error",
+  //         text: health_issue_family_member?.substr(0, 26),
+  //       });
+  //     }
+  //   }
+  //   return () => {
+  //     dispatch({ type: "HEALTH_ISSUE_FAMILY_MEMBER", payload: "" });
+  //   };
+  // }, [health_issue_family_member]);
 
   // Add Modal Res
 
-  // console.log("familymemberHealtDetail", );
+  useEffect(() => {
+    if (gender_list) {
+      if (gender_list?.data?.statusCode == "200") {
+        setGenderList(gender_list?.data?.data?.objectArray);
+      } else {
+        Swal.fire({
+          icon: "error",
+          text: "Something Went Wrong",
+        });
+      }
+    }
+  }, [gender_list]);
+  useEffect(() => {
+    if (city_list) {
+      if (city_list?.data?.statusCode == "200") {
+        setCityList(city_list?.data?.data?.objectArray);
+      } else {
+        Swal.fire({
+          icon: "error",
+          text: "Something Went Wrong",
+        });
+      }
+    }
+  }, [city_list]);
+
+  useEffect(() => {
+    if (update_height_width_res) {
+      if (update_height_width_res?.data?.statusCode == "200") {
+        setGenderList(update_height_width_res?.data?.data?.objectArray);
+      } else {
+        Swal.fire({
+          icon: "error",
+          text: "Something Went Wrong",
+        });
+      }
+    }
+    dispatch({ type: "UPDATE_HEIGHT_WEIGHT", payload: "" });
+  }, [update_height_width_res]);
   return (
     <div className="main-content">
       <div className="tnstitution">
@@ -1695,18 +2105,19 @@ const Benificiary = () => {
             <div className="cmy-drp">
               <form>
                 <div className="form-group">
-                  <label>Institution</label>
+                  <label>{covert({ id: "Institution" })}</label>
                   <select onChange={(e) => setInstitution(e.target.value)}>
                     <option value={""} selected>
-                      Select Company
+                      {covert({ id: "Select Company" })}
                     </option>
                     {institutionList &&
                       institutionList?.map((val, ins) => (
                         <option
                           value={
-                            val?.cityHQ +
+                            val?.city?.englishName +
                             "-" +
-                            val?.institutionId +
+                            // val?.institutionId +
+                            val?._id +
                             "-" +
                             val?.name +
                             "-" +
@@ -1725,12 +2136,14 @@ const Benificiary = () => {
           <Col lg={6} md={12} className="text-end">
             <div className="benfits-btn">
               <button onClick={() => setModalShow1(true)}>
-                + Add New Institution
+                {/* + Add New Institution */}
+                {covert({ id: "addnewinstitution" })}
               </button>
               <MyVerticallyInstitution
                 show={modalShow1}
                 onHide={() => setModalShow1(false)}
                 institutiondata={institutiondata}
+                cityList={cityList}
               />
               <button
                 onClick={() => {
@@ -1743,22 +2156,27 @@ const Benificiary = () => {
                       timer: 2000,
                     });
                   }
+                  // setModalShow(true);
                 }}
               >
-                + Add New Subscriber
+                {covert({ id: "addnewsubs" })}
+                {/* + Add New Subscriber */}
               </button>
               <MyVerticallyCenteredModal
                 show={modalShow}
                 onHide={() => setModalShow(false)}
                 institutiondata={institutiondata}
+                genderList={genderList}
+                cityList={cityList}
+                relationship={relationship}
               />
-              <button>+ Import Subscribers</button>
+              <button>{covert({ id: "importSubs" })}</button>
             </div>
           </Col>
         </Row>
       </div>
       <div className="policy-beneficiary">
-        <h5>Policy Subscribers</h5>
+        <h5>{covert({ id: "policySubs" })}</h5>
         <div className="plcy-bene">
           <Row>
             <Col lg={4} md={12} className="p-0 bdr-rght">
@@ -1766,7 +2184,7 @@ const Benificiary = () => {
                 <div className="title-hdr">
                   <h2>
                     <span></span>
-                    Details
+                    {covert({ id: "onlyDetails" })}
                     <span>
                       <img
                         src={"/assets/images/file-icon.svg"}
@@ -1779,29 +2197,32 @@ const Benificiary = () => {
                 <div className="drl-lst">
                   <ul>
                     <li>
-                      Institution name:{" "}
+                      {covert({ id: "InstitutionName" })}
                       <span> {institutiondata?.split("-")[2]}</span>
                     </li>
                     <li>
-                      Phone number: <span>091-954-3355</span>
+                      {covert({ id: "Phone Number:" })}{" "}
+                      <span>091-954-3355</span>
                     </li>
                     <li>
-                      Address: <span>Shatar road</span>
+                      {covert({ id: "Address" })}: <span>Shatar road</span>
                     </li>
                     <li>
-                      City: <span> {institutiondata?.split("-")[0]}</span>
+                      {covert({ id: "City" })} :{" "}
+                      <span> {institutiondata?.split("-")[0]}</span>
                     </li>
                     <li>
-                      Employee count: <span>24231</span>
+                      {covert({ id: "Employee Count" })}: <span>24231</span>
                     </li>
                     <li>
-                      Beneficiary count: <span>70231</span>
+                      {covert({ id: "BenifCount" })}: <span>70231</span>
                     </li>
                     <li>
-                      Insurance budget: <span>1,000,000 Dinars</span>
+                      {covert({ id: "InsuBudget" })}:
+                      <span>1,000,000 Dinars</span>
                     </li>
                     <li>
-                      Reset date: <span>October 3</span>
+                      {covert({ id: "REsetDate" })}: <span>October 3</span>
                     </li>
                   </ul>
                 </div>
@@ -1816,7 +2237,7 @@ const Benificiary = () => {
                         onClick={() => setDetailsButton(!detatilsbtn)}
                       />
                     </span>
-                    Details
+                    {covert({ id: "onlyDetails" })}
                     <span>
                       <img
                         src={"/assets/images/check-mark.svg"}
@@ -1829,13 +2250,13 @@ const Benificiary = () => {
                 <div className="drl-lst">
                   <ul>
                     <li>
-                      Institution name:{" "}
+                      {covert({ id: "InstitutionName" })}
                       <span>
                         <input type="text" placeholder="Al-Naseem company" />
                       </span>
                     </li>
                     <li>
-                      Phone number:{" "}
+                      {covert({ id: "Phone Number:" })}
                       <span>
                         <input type="number" placeholder="091-954" />
                       </span>
@@ -1884,7 +2305,7 @@ const Benificiary = () => {
                 <div className="title-hdr">
                   <h2>
                     <span></span>
-                    Benefit Policy{" "}
+                    {covert({ id: "Benifit Policy" })}
                     <span>
                       <img
                         src={"/assets/images/file-icon.svg"}
@@ -1901,7 +2322,7 @@ const Benificiary = () => {
                     id="noanim-tab-example"
                     className=" paitnt-tabs"
                   >
-                    <Tab eventKey="home" title="In-Patient">
+                    <Tab eventKey="home" title={covert({ id: "In-Patient" })}>
                       <div className="lmt-dan">
                         <h2>
                           Aggregate Limit <span>1000LYD per member</span>
@@ -1910,10 +2331,10 @@ const Benificiary = () => {
                       <div className="srce-lmt text-center">
                         <Row>
                           <Col>
-                            <h4>Service</h4>
+                            <h4>{covert({ id: "onlyServie" })}</h4>
                           </Col>
                           <Col>
-                            <h4>Limit</h4>
+                            <h4>{covert({ id: "Limit" })}</h4>
                           </Col>
                           <hr />
                           <Col>
@@ -1945,7 +2366,10 @@ const Benificiary = () => {
                         </Row>
                       </div>
                     </Tab>
-                    <Tab eventKey="profile" title="Out-Patient">
+                    <Tab
+                      eventKey="profile"
+                      title={covert({ id: "Out-Patient" })}
+                    >
                       <div className="lmt-dan">
                         <h2>
                           Aggregate Limit <span>1000LYD per member</span>
@@ -1954,10 +2378,10 @@ const Benificiary = () => {
                       <div className="srce-lmt text-center">
                         <Row>
                           <Col>
-                            <h4>Service</h4>
+                            <h4>{covert({ id: "onlyServie" })}</h4>
                           </Col>
                           <Col>
-                            <h4>Limit</h4>
+                            <h4></h4>
                           </Col>
                           <hr />
                           <Col>
@@ -2029,10 +2453,10 @@ const Benificiary = () => {
                       <div className="edt-flds srce-lmt text-center">
                         <Row>
                           <Col>
-                            <h4>Service</h4>
+                            <h4>{covert({ id: "onlyServie" })}</h4>
                           </Col>
                           <Col>
-                            <h4>Limit</h4>
+                            <h4>{covert({ id: "Limit" })}</h4>
                           </Col>
                           <hr />
                           <Col>
@@ -2095,10 +2519,10 @@ const Benificiary = () => {
                       <div className="srce-lmt text-center">
                         <Row>
                           <Col>
-                            <h4>Service</h4>
+                            <h4>{covert({ id: "onlyServie" })}</h4>
                           </Col>
                           <Col>
-                            <h4>Limit</h4>
+                            <h4>{covert({ id: "Limit" })}</h4>
                           </Col>
                           <hr />
                           <Col>
@@ -2159,30 +2583,37 @@ const Benificiary = () => {
             <Col lg={8} md={12} className="pdn-rght">
               <div className="table-hdr">
                 <div className="serch-section">
-                  <input type="text" placeholder="Search by name" />
+                  <input
+                    type="text"
+                    placeholder={covert({ id: "Search By Name" })}
+                    onChange={(e) => {
+                      optimizedFn(e.target.value);
+                    }}
+                  />
                   <img src={"/assets/images/search-normal.svg"} alt="img" />
                 </div>
                 <div className="heading-tble">
-                  <h3>Subscribers</h3>
+                  <h3>{covert({ id: "onlySubscribers" })}</h3>
                 </div>
                 <div className="imprt-btn">
-                  <button>Import</button>
+                  <button>{covert({ id: "onlyImport" })}</button>
                 </div>
               </div>
               <div className="benefic-tble">
                 <Table className="table-responsive">
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>Full Name</th>
+                      <th>{covert({ id: "onlyid" })}</th>
                       <th>
-                        BirthDate <span>(Age)</span>
+                        {covert({ id: "Full Name" })}
+                        {/* Full Name */}
                       </th>
-                      <th>Status</th>
-                      <th>Family Count</th>
-                      <th>Employee ID</th>
-                      <th>Phone Number</th>
-                      <th>Residence </th>
+                      <th>{covert({ id: "birthday(age)" })}</th>
+                      <th>{covert({ id: "Status" })}</th>
+                      <th>{covert({ id: "Family Count" })}</th>
+                      <th>{covert({ id: "Employee Id" })}</th>
+                      <th>{covert({ id: "Phone Number" })}</th>
+                      <th>{covert({ id: "residence" })} </th>
                       <th></th>
                     </tr>
                   </thead>
@@ -2190,8 +2621,8 @@ const Benificiary = () => {
                     {benef_lists &&
                       benef_lists?.map((val, ins) => (
                         <>
-                          <tr key={ins} onClick={(e) => setShowRow(e, val)}>
-                            <td>{val.beneficiaryId}</td>
+                          <tr key={ins}>
+                            <td>{val._id}</td>
                             <td>
                               {val?.firstName} {val?.middleName} {val?.lastName}
                             </td>
@@ -2208,21 +2639,37 @@ const Benificiary = () => {
                                 checked={true}
                               />
                             </td>
-                            <td>{val?.familyMembers?.length}</td>
+                            <td>{val?.beneficiaries?.length}</td>
                             <td>Employee ID</td>
                             <td>{val?.phoneNumber}</td>
                             <td>{val?.residentCity} </td>
                             <td>
-                              <button>Details</button>{" "}
+                              <button
+                                onClick={(e) => {
+                                  // e.stopPropagation();
+                                  setShowRow(e, val);
+                                }}
+                              >
+                                {covert({ id: "Details" })}
+                              </button>{" "}
+                              <button
+                                onClick={(e) => {
+                                  // console.log("heeloo", val);
+                                  setEditModalofSubScriber(true);
+                                  setBeneficaryData(val);
+                                }}
+                              >
+                                {covert({ id: "Edit" })}
+                              </button>{" "}
                             </td>
                           </tr>
                           {secondRow?.includes(val?._id) ? (
                             <>
-                              {val?.familyMembers &&
-                                val?.familyMembers?.map((v, i) => (
+                              {val?.beneficiaries &&
+                                val?.beneficiaries?.map((v, i) => (
                                   <>
                                     <tr className="clr-tr">
-                                      <td>{v?.familyMemberId}</td>
+                                      <td>{v?._id}</td>
                                       <td>
                                         {v.firstName} {v.middleName}{" "}
                                         {v.lastName}
@@ -2241,9 +2688,20 @@ const Benificiary = () => {
                                           id="custom-switch"
                                         />
                                       </td>
-                                      <td>{v?.relationshipToSubscriber}</td>
+                                      <td>
+                                        {
+                                          v?.relationshipToSubscriber
+                                            ?.englishName
+                                        }
+                                      </td>
                                       <td style={{ cursor: "pointer" }}>
                                         <button
+                                          style={{
+                                            marginRight:
+                                              locale == "ar" ? "" : "15px",
+                                              marginLeft:
+                                              locale == "ar" ? "15px" : "",
+                                          }}
                                           className="mdcl-dlt-shbrtn"
                                           onClick={(e) => {
                                             setShowThirdRow(e, v);
@@ -2252,8 +2710,22 @@ const Benificiary = () => {
                                           }}
                                         >
                                           <AiOutlineProfile
-                                            style={{ fontSize: "15px" }}
+                                            style={{
+                                              fontSize: "15px",
+                                            }}
                                           />
+                                        </button>
+
+                                        <button
+                                          className="mdcl-dlt-shbrtn "
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            setBeneficaryData(val?._id);
+                                            setFamilyMember(v);
+                                            setBenefiaryModal(true);
+                                          }}
+                                        >
+                                          {covert({ id: "Edit" })}
                                         </button>
                                       </td>
                                     </tr>
@@ -2267,88 +2739,9 @@ const Benificiary = () => {
                                       }
                                       bene_id={beniId}
                                       setMedicalModal={setMedicalModal}
+                                      genderList={genderList}
+                                      cityList={cityList}
                                     />
-
-                                    {/* {
-                                      thirdRow?.includes(v?._id) ?
-                                        <>
-                                          {
-                                            v?.medicalFiles &&
-                                            < tr >
-                                              <td colspan="6" className="bodr-slctn-active">
-                                                <Table className="table-responsive sub-mdi-dta">
-                                                  <thead>
-                                                    <tr>
-                                                      <th>Id</th>
-                                                      <th>Blood Group</th>
-                                                      <th>Height</th>
-                                                      <th>Weight</th>
-                                                      <th></th>
-                                                    </tr>
-                                                  </thead>
-                                                  <tbody>
-                                                    <tr>
-                                                      <td>{v?.medicalFiles?.medicalFileId}</td>
-                                                      <td>{v?.medicalFiles?.bloodType}</td>
-                                                      <td>{v?.medicalFiles?.height}</td>
-                                                      <td>{v?.medicalFiles?.weight}</td>
-                                                      <td ><button className="mdcl-dlt-shbrtn" onClick={(e) => ShowAllergies(e, v)}>Allergies</button></td>
-                                                    </tr>
-
-                                                    {showalergies &&
-                                                      <tr>
-                                                        <td colspan="6" className="bodr-slctn-active">
-                                                          <Table className="table-responsive sub-mdi-dta">
-                                                            <thead>
-                                                              <tr>
-                                                                <th>Allergy Name</th>
-                                                                <th>Notes</th>
-                                                              </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                              {showalergies && alergies?.map((vas, isa) => (
-                                                                <tr>
-                                                                  <td>{vas?.allergyName}</td>
-                                                                  <td><OverlayTrigger
-                                                                    placement="top"
-                                                                    overlay={
-                                                                      <Tooltip id={`tooltip-${isa}`}>
-                                                                        {vas?.notes}
-                                                                      </Tooltip>
-                                                                    }
-                                                                  >
-                                                                    <p>
-                                                                      {vas?.notes?.substr(0, 10)}
-
-                                                                      {vas?.notes?.substring(
-                                                                        10
-                                                                      ) ? (
-                                                                        <>....</>
-                                                                      ) : (
-                                                                        ""
-                                                                      )}
-                                                                    </p>
-                                                                  </OverlayTrigger>
-
-                                                                  </td>
-                                                                </tr>
-                                                              ))}
-                                                            </tbody>
-                                                          </Table>
-
-                                                        </td>
-                                                      </tr>
-                                                    }
-
-                                                  </tbody>
-                                                </Table>
-                                              </td>
-                                            </tr>
-
-                                          }
-
-                                        </> : ""
-                                    } */}
                                   </>
                                 ))}
                             </>
@@ -2380,11 +2773,29 @@ const Benificiary = () => {
                       onClick={LoadMore}
                     >
                       {" "}
-                      Load More{" "}
+                      {covert({ id: "loadmore" })}
                     </button>
                   </center>
                 )}
               </div>
+              <EditSubscriberData
+                show={editsubscriber}
+                onHide={() => setEditModalofSubScriber(false)}
+                genderList={genderList}
+                cityList={cityList}
+                beneficarydataEdit={beneficarydataEdit}
+                institutionList={institutionList}
+              />
+              <EditBenificiary
+                show={benifiacryEdit}
+                onHide={() => setBenefiaryModal(false)}
+                genderList={genderList}
+                cityList={cityList}
+                beneficarydataEdit={beneficarydataEdit}
+                institutionList={institutionList}
+                familymember={familymember}
+                relationship={relationship}
+              />
             </Col>
           </Row>
         </div>
@@ -2394,14 +2805,3 @@ const Benificiary = () => {
 };
 
 export default Benificiary;
-
-// export const getServerSideProps = async (context) => {
-//   let data  = context.req.cookies['Zept_Auth_token_User']
-//   console.log("cont", data);
-
-//   return {
-//     props: {
-//       data: [],
-//     },
-//   };
-// };

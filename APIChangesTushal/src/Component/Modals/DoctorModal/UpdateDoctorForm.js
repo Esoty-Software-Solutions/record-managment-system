@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Tooltip,
   OverlayTrigger,
@@ -12,42 +12,68 @@ import { TiTick } from "react-icons/ti";
 import { Formik } from "formik";
 import {
   createSchedulesByDoctor,
+  getSingleDocotor,
   UpdateDoc,
 } from "../../../redux/actions/action";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import ErrorComponent from "../../../Utils/ErrorComponent";
+import { useRouter } from "next/router";
+import { useIntl } from "react-intl";
+import Swal from "sweetalert2";
 function UpdateDoctorForm(props) {
+  const [singledoc, setSingleDoctor] = useState();
+  const { single_doctor_res } = useSelector((state) => state.fetchdata);
   const dispatch = useDispatch();
-
-  // console.log("props",props.medicaldata?.doctorId);
   const handleSubmit = (values) => {
-    dispatch(UpdateDoc(values, props.medicaldata?.doctorId));
-    // setTimeout(() => {
-    // }, 1500);
+    dispatch(UpdateDoc(values, props.medicaldata?._id));
     props.onHide();
+    dispatch({ type: "GET_SINGLE_DOCTOR", payload: "" });
   };
+  const { locale } = useRouter();
+
+  const { formatMessage: covert } = useIntl();
+
+  useEffect(() => {
+    if (props.show) dispatch(getSingleDocotor(props.medicaldata?._id));
+  }, [props.show]);
+
+  useEffect(() => {
+    if (single_doctor_res) {
+      if (single_doctor_res?.data?.statusCode == "200") {
+        setSingleDoctor(single_doctor_res?.data?.data);
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: single_doctor_res,
+        });
+      }
+    }
+  }, [single_doctor_res]);
+
+  // console.log("single_doctor_res", singledoc);
   return (
     <Modal
       {...props}
       size="lg"
       aria-labelledby="contained-modal-title-vcenter"
       centered
-      className="add-medi-cntr"
+      className={locale == "ar" ? "add-medi-cntr new-rtl" : "add-medi-cntr"}
     >
       <Modal.Body className="p-0 ">
         <div className="add-new-bene institution">
-          <h4>Update Doctor</h4>
+          <h4>{covert({ id: "updatedoctor" })}</h4>
           <Row>
             <Col md={12}>
               <Formik
                 initialValues={{
-                  first: props?.medicaldata?.firstName,
-                  middle: props?.medicaldata?.middleName,
-                  last: props?.medicaldata?.lastName,
-                  gender: props?.medicaldata?.gender,
-                  birthdate: props?.medicaldata?.birthdate,
-                  specialty: props?.medicaldata?.specialty,
-                  level: props?.medicaldata?.level,
+                  first: singledoc?.firstName,
+                  second: singledoc?.secondName,
+                  // middle: singledoc?.middleName,
+                  last: singledoc?.lastName,
+                  gender: singledoc?.gender?._id,
+                  birthdate: singledoc?.birthdate,
+                  specialty: singledoc?.specialty?._id,
+                  level: singledoc?.level,
                 }}
                 onSubmit={handleSubmit}
                 // validationSchema={DoctorForm}
@@ -69,14 +95,14 @@ function UpdateDoctorForm(props) {
                         <Row>
                           <Col md={4}>
                             <div className="form-group">
-                              <label>First name: </label>
+                              <label>{covert({ id: "fname" })} </label>
                               <input
                                 type="text"
                                 name="first"
                                 value={values.first}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
-                                placeholder="First name"
+                                placeholder={covert({ id: "fname" })}
                               />
                             </div>
                             <ErrorComponent
@@ -87,10 +113,28 @@ function UpdateDoctorForm(props) {
                           </Col>
                           <Col md={4}>
                             <div className="form-group">
-                              <label>Middle Name: </label>
+                              <label>{covert({ id: "secondname" })}</label>
                               <input
                                 type="text"
-                                placeholder="Middle name"
+                                name="second"
+                                value={values.second}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                placeholder={covert({ id: "secondname" })}
+                              />
+                            </div>
+                            <ErrorComponent
+                              error={
+                                errors.second && touched.second && errors.second
+                              }
+                            />
+                          </Col>
+                          {/* <Col md={4}>
+                            <div className="form-group">
+                              <label>{covert({ id: "mname" })} </label>
+                              <input
+                                type="text"
+                                placeholder={covert({ id: "mname" })}
                                 name="middle"
                                 value={values.middle}
                                 onChange={handleChange}
@@ -102,13 +146,13 @@ function UpdateDoctorForm(props) {
                                 errors.middle && touched.middle && errors.middle
                               }
                             />
-                          </Col>
+                          </Col> */}
                           <Col md={4}>
                             <div className="form-group">
-                              <label>Last name: </label>
+                              <label>{covert({ id: "lname" })} </label>
                               <input
                                 type="text"
-                                placeholder="Last name"
+                                placeholder={covert({ id: "lname" })}
                                 name="last"
                                 value={values.last}
                                 onChange={handleChange}
@@ -121,7 +165,7 @@ function UpdateDoctorForm(props) {
                           </Col>
                           <Col md={3}>
                             <div className="form-group">
-                              <label>Gender: </label>
+                              <label>{covert({ id: "gender" })}: </label>
                               <select
                                 name="gender"
                                 value={values.gender}
@@ -131,8 +175,14 @@ function UpdateDoctorForm(props) {
                                 <option value="" selected>
                                   --Select Gender--
                                 </option>
-                                <option value="male">male</option>
-                                <option value="female">female</option>
+                                {props.genderList &&
+                                  props.genderList?.map((v, ia) => (
+                                    <option key={ia} value={v?._id}>
+                                      {locale == "ar"
+                                        ? v?.arabicName
+                                        : v?.englishName}
+                                    </option>
+                                  ))}
                               </select>
                             </div>
                             <ErrorComponent
@@ -143,10 +193,9 @@ function UpdateDoctorForm(props) {
                           </Col>
                           <Col md={3}>
                             <div className="form-group">
-                              <label>Birthdate: </label>
+                              <label>{covert({ id: "onlydob" })} </label>
                               <input
                                 type="date"
-                                placeholder="Birthdate:"
                                 name="birthdate"
                                 value={values.birthdate}
                                 onChange={handleChange}
@@ -163,7 +212,7 @@ function UpdateDoctorForm(props) {
                           </Col>
                           <Col md={3}>
                             <div className="form-group">
-                              <label>Speciality: </label>
+                              <label>{covert({ id: "Specialty" })} </label>
                               <select
                                 name="specialty"
                                 value={values.specialty}
@@ -171,13 +220,16 @@ function UpdateDoctorForm(props) {
                                 onBlur={handleBlur}
                               >
                                 <option value="" selected>
-                                  --Select Speciality--
+                               
+                                  {covert({ id: "selectSpecilaity" })}
                                 </option>
 
                                 {props.specialLists &&
                                   props.specialLists?.map((v, ia) => (
-                                    <option key={ia} value={v?.specialtyName}>
-                                      {v?.specialtyName}
+                                    <option key={ia} value={v?._id}>
+                                      {locale == "ar"
+                                        ? v?.arabicName
+                                        : v?.englishName}
                                     </option>
                                   ))}
                               </select>
@@ -192,7 +244,7 @@ function UpdateDoctorForm(props) {
                           </Col>
                           <Col md={3}>
                             <div className="form-group">
-                              <label>Level: </label>
+                              <label>{covert({ id: "level" })} </label>
                               <select
                                 name="level"
                                 value={values.level}
@@ -214,12 +266,6 @@ function UpdateDoctorForm(props) {
                               }
                             />
                           </Col>
-                          <Col md={12}>
-                            <div className="form-group">
-                              <label>Description </label>
-                              <textarea rows="3"></textarea>
-                            </div>
-                          </Col>
                         </Row>
                       </form>
                     </div>
@@ -233,10 +279,10 @@ function UpdateDoctorForm(props) {
       <Modal.Footer>
         <div className="can-sve mt-0">
           <button onClick={props.onHide} className="cls-btn-btn">
-            Cancel
+            {covert({ id: "Cancel" })}
           </button>
           <button className="add-fmy-btn" type="submit" form="form-data">
-            Update
+            {covert({ id: "onlyUpdate" })}
           </button>
         </div>
       </Modal.Footer>

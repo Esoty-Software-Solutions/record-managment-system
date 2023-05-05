@@ -2,35 +2,61 @@ import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Modal, Row, Col } from "react-bootstrap";
 import { Formik } from "formik";
-import { AddMedicalRes } from "../../../redux/actions/action";
+import {
+  AddMedicalRes,
+  updateMedicalSpecilaty,
+} from "../../../redux/actions/action";
 import ErrorComponent from "../../../Utils/ErrorComponent";
+import { useIntl } from "react-intl";
+import { useRouter } from "next/router";
 
 function AddMedicalSpecilaty(props) {
+  const { formatMessage: covert } = useIntl();
   const dispatch = useDispatch();
   // console.log(props.specialLists);
   const handleSubmit = (values) => {
-    console.log("Sdsd", values);
-    dispatch(AddMedicalRes(values));
-    // props.onHide();
+    if (props?.data?._id) {
+      dispatch(updateMedicalSpecilaty(values, props?.data?._id));
+    } else {
+      dispatch(AddMedicalRes(values));
+    }
+    props.onHide();
   };
+
+
+  
+  const { locale } = useRouter();
   return (
     <Modal
       {...props}
       size="lg"
       aria-labelledby="contained-modal-title-vcenter"
       centered
-      className="add-medi-cntr"
+      className={locale == "ar" ? "add-medi-cntr new-rtl" : "add-medi-cntr"}
     >
       <Modal.Body className="p-0 ">
         <div className="add-new-bene institution">
-          <h4>Add Medical Specialty</h4>
+          <h4>
+            {props?.data?._id
+              ? covert({ id: "UpdateMedical" })
+              : covert({ id: "Add Medical Specialty" })}
+          </h4>
           <Row>
             <Col md={12}>
               <Formik
                 initialValues={{
-                  EnglishName: "",
-                  backendName: "",
-                  ArabicName: "",
+                  // englishName: "",
+                  // backendName: "",
+                  // arabicName: "",
+                  englishName: props?.data?.englishName
+                    ? props?.data?.englishName
+                    : "",
+                  backendName: props?.data?.backendName
+                    ? props?.data?.backendName
+                    : "",
+                  arabicName: props?.data?.arabicName
+                    ? props?.data?.arabicName
+                    : "",
                 }}
                 onSubmit={handleSubmit}
                 // validationSchema={DoctorForm}
@@ -52,30 +78,30 @@ function AddMedicalSpecilaty(props) {
                         <Row>
                           <Col md={6}>
                             <div className="form-group">
-                              <label>English Name: </label>
+                              <label>{covert({ id: "englishName" })}</label>
                               <input
                                 type="text"
-                                name="EnglishName"
-                                value={values.EnglishName}
+                                name="englishName"
+                                value={values.englishName}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
-                                placeholder="English Name"
+                                placeholder={covert({ id: "englishName" })}
                               />
                             </div>
                             <ErrorComponent
                               error={
-                                errors.EnglishName &&
-                                touched.EnglishName &&
-                                errors.EnglishName
+                                errors.englishName &&
+                                touched.englishName &&
+                                errors.englishName
                               }
                             />
                           </Col>
                           <Col md={6}>
                             <div className="form-group">
-                              <label>Backend Name: </label>
+                              <label>{covert({ id: "bankendName" })} </label>
                               <input
                                 type="text"
-                                placeholder="Backend Name"
+                                placeholder={covert({ id: "bankendName" })}
                                 name="backendName"
                                 value={values.backendName}
                                 onChange={handleChange}
@@ -93,21 +119,21 @@ function AddMedicalSpecilaty(props) {
 
                           <Col md={6}>
                             <div className="form-group">
-                              <label>Arabic Name: </label>
+                              <label>{covert({ id: "arabicName" })}</label>
                               <input
                                 type="text"
-                                placeholder="Arabic Name"
-                                name="ArabicName"
-                                value={values.ArabicName}
+                                placeholder={covert({ id: "arabicName" })}
+                                name="arabicName"
+                                value={values.arabicName}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                               />
                             </div>
                             <ErrorComponent
                               error={
-                                errors.ArabicName &&
-                                touched.ArabicName &&
-                                errors.ArabicName
+                                errors.arabicName &&
+                                touched.arabicName &&
+                                errors.arabicName
                               }
                             />
                           </Col>
@@ -124,10 +150,12 @@ function AddMedicalSpecilaty(props) {
       <Modal.Footer>
         <div className="can-sve mt-0">
           <button onClick={props.onHide} className="cls-btn-btn">
-            Cancel
+            {covert({ id: "Cancel" })}
           </button>
           <button className="add-fmy-btn" type="submit" form="form-data">
-            Add
+            {props?.data?._id
+              ? covert({ id: "onlyUpdate" })
+              : covert({ id: "add" })}
           </button>
         </div>
       </Modal.Footer>

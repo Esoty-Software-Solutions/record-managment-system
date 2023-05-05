@@ -5,18 +5,20 @@ import { RiArrowDropDownLine } from "react-icons/ri";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import  {RiCustomerService2Fill} from "react-icons/ri"
-import  {BsGenderMale ,BsJournalMedical} from "react-icons/bs"
-import  {FaCity} from "react-icons/fa"
-import  {TbCalendarTime} from "react-icons/tb"
-import  {AiFillAccountBook} from "react-icons/ai"
+import { RiCustomerService2Fill } from "react-icons/ri";
+import { BsGenderMale, BsJournalMedical } from "react-icons/bs";
+import { FaCity } from "react-icons/fa";
+import { TbCalendarTime } from "react-icons/tb";
+import { AiFillAccountBook } from "react-icons/ai";
+import { useIntl } from "react-intl";
+
 
 const Sidebar = () => {
   const location = useRouter();
   const dispatch = useDispatch();
   const [dropdown, setShowDrop] = useState(false);
   const { sidebar } = useSelector((state) => state.fetchdata);
-
+  const { formatMessage: covert } = useIntl();
   return (
     <div
       className={`${
@@ -47,7 +49,8 @@ const Sidebar = () => {
                   alt="img"
                 />
               </i>{" "}
-              <span>Process Booking</span>
+              <span>{covert({ id: "Total" })}</span>
+              {/* <span>Process Booking</span> */}
             </Link>
           </li>
           <li
@@ -62,8 +65,9 @@ const Sidebar = () => {
                 {" "}
                 <img src={"/assets/images/side-2.svg"} alt="img" />
               </i>{" "}
-              <span>Medical Center</span>
+              <span>{covert({ id: "MedicalCenter" })}</span>
             </Link>
+            {/* <span>Medical Center</span> */}
           </li>
           <li
             className={
@@ -75,7 +79,8 @@ const Sidebar = () => {
                 {" "}
                 <img src={"/assets/images/side-3.svg"} alt="img" />
               </i>{" "}
-              <span>Doctor</span>
+              
+              <span>{covert({ id: "Doctor" })}</span>
             </Link>
           </li>
           <li
@@ -90,7 +95,23 @@ const Sidebar = () => {
                 {" "}
                 <img src={"/assets/images/side-4.svg"} alt="img" />
               </i>{" "}
-              <span>Institution</span>
+              <span>{covert({ id: "Subscriber" })}</span>
+              {/* <span>{covert({ id: "Institution" })}</span> */}
+            </Link>
+          </li>
+          <li
+            className={
+              location.pathname == "/Prescription"
+                ? "active meni-tem"
+                : "meni-tem"
+            }
+          >
+            <Link href="/Prescription">
+              <i>
+                {" "}
+                <img src={"/assets/images/side-4.svg"} alt="img" />
+              </i>{" "}
+              <span>{covert({ id: "Prescription" })}</span>
             </Link>
           </li>
           <li
@@ -105,7 +126,7 @@ const Sidebar = () => {
                 {" "}
                 <img src={"/assets/images/side-4.svg"} alt="img" />
               </i>{" "}
-              <span>Expense Claims</span>
+              <span>{covert({ id: "expenseCLaims" })}</span>
             </Link>
           </li>
 
@@ -125,7 +146,8 @@ const Sidebar = () => {
                 <img src={"/assets/images/side-4.svg"} alt="img" />
               </i>{" "}
               <span>
-                Medical Claims{" "}
+                {covert({ id: "MedicalClaims" })}
+
                 <b className={!dropdown ? "icn-dp" : "icn-dp rotate-icon"}>
                   <RiArrowDropDownLine />
                 </b>
@@ -145,7 +167,7 @@ const Sidebar = () => {
                     
                   
                   </i>  */}
-                  <span>Medical Claims</span>
+                  <span> {covert({ id: "MedicalClaims" })}</span>
                 </Link>
               </li>
 
@@ -160,7 +182,7 @@ const Sidebar = () => {
                   {/* <i>
                      
                   </i>  */}
-                  <span>Medical Expense Claims Detailed View</span>
+                  <span>{covert({ id: "medicaldetail" })}</span>
                 </Link>
               </li>
               <li
@@ -175,7 +197,7 @@ const Sidebar = () => {
                    
                     
                   </i>  */}
-                  <span>Medical Generic Service</span>
+                  <span>{covert({ id: "medicalgeneric" })}</span>
                 </Link>
               </li>
             </ul>
@@ -193,7 +215,7 @@ const Sidebar = () => {
                 {" "}
                 <img src={"/assets/images/side-5.svg"} alt="img" />
               </i>{" "}
-              <span> Admintration</span>
+              <span>{covert({ id: "adminration" })}</span>
             </Link>
           </li>
 
@@ -207,10 +229,10 @@ const Sidebar = () => {
             <Link href="/Cities">
               <i>
                 {" "}
-                <FaCity style={{fontSize:"20px"}} />
+                <FaCity style={{ fontSize: "20px" }} />
                 {/* <img src={"/assets/images/side-4.svg"} alt="img" /> */}
               </i>{" "}
-              <span>Cities</span>
+              <span>{covert({ id: "onlyCity" })}</span>
             </Link>
           </li>
 
@@ -224,10 +246,11 @@ const Sidebar = () => {
             <Link href="/MedicalSpecilaty">
               <i>
                 {" "}
-                <BsJournalMedical style={{fontSize:"20px"}} />
+                <BsJournalMedical style={{ fontSize: "20px" }} />
                 {/* <img src={"/assets/images/side-4.svg"} alt="img" /> */}
               </i>{" "}
-              <span>Medical Specilaties</span>
+              {/* <span>Medical Specilaties</span> */}
+              <span>{covert({ id: "medicalSpcecalties" })}</span>
             </Link>
           </li>
 
@@ -239,10 +262,10 @@ const Sidebar = () => {
             <Link href="/Gender">
               <i>
                 {" "}
-                <BsGenderMale  style={{fontSize:"20px"}}/>
+                <BsGenderMale style={{ fontSize: "20px" }} />
                 {/* <img src={"/assets/images/side-4.svg"} alt="img" /> */}
               </i>{" "}
-              <span>Gender</span>
+              <span>{covert({ id: "gender" })}</span>
             </Link>
           </li>
           <li
@@ -255,10 +278,10 @@ const Sidebar = () => {
             <Link href="/MedicalService">
               <i>
                 {" "}
-                <RiCustomerService2Fill style={{fontSize:"20px"}}/>
+                <RiCustomerService2Fill style={{ fontSize: "20px" }} />
                 {/* <img src={"/assets/images/side-4.svg"} alt="img" /> */}
               </i>{" "}
-              <span>Medical Service</span>
+              <span>{covert({ id: "medicalservice" })}</span>
             </Link>
           </li>
           <li
@@ -273,7 +296,7 @@ const Sidebar = () => {
                 {" "}
                 <img src={"/assets/images/side-4.svg"} alt="img" />
               </i>{" "}
-              <span>Appointment</span>
+              <span> {covert({ id: "Onlyappointment" })}</span>
             </Link>
           </li>
 
@@ -289,7 +312,7 @@ const Sidebar = () => {
                 {" "}
                 <img src={"/assets/images/side-4.svg"} alt="img" />
               </i>{" "}
-              <span>Relation Ship</span>
+              <span>{covert({ id: "RelationShip" })}</span>
             </Link>
           </li>
 
@@ -301,10 +324,10 @@ const Sidebar = () => {
             <Link href="/TimeSlot">
               <i>
                 {" "}
-                <TbCalendarTime style={{fontSize:"20px"}}/>
+                <TbCalendarTime style={{ fontSize: "20px" }} />
                 {/* <img src={"/assets/images/side-4.svg"} alt="img" /> */}
               </i>{" "}
-              <span>Time Slot</span>
+              <span>{covert({ id: "TimeSlot" })}</span>
             </Link>
           </li>
 
@@ -318,10 +341,10 @@ const Sidebar = () => {
             <Link href="/AccountStatus">
               <i>
                 {" "}
-                <AiFillAccountBook  style={{fontSize:"20px"}} />
+                <AiFillAccountBook style={{ fontSize: "20px" }} />
                 {/* <img src={"/assets/images/side-4.svg"} alt="img" /> */}
               </i>{" "}
-              <span>Account Status</span>
+              <span>{covert({ id: "Account Status" })}</span>
             </Link>
           </li>
         </ul>

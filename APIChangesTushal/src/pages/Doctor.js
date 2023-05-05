@@ -18,6 +18,7 @@ import {
   DeleteSchdeule,
   DeleteSchdeuleOneByOne,
   DoctorList,
+  GenderList,
   GetSchedulesByDoctor,
   GetSchedulesByDoctorForScdhule,
   MedicalCenterListForModal,
@@ -25,6 +26,7 @@ import {
   UpdateDoc,
   createSchedulesByDoctor,
   createSchedulesByDoctorForScdeule,
+  getTimeSlotEnum,
   updateMedicalSchedule,
 } from "../redux/actions/action";
 import { useDispatch, useSelector } from "react-redux";
@@ -35,6 +37,8 @@ import moment from "moment";
 import AddNewDoctorModal from "../Component/Modals/AddNewDoctorModal";
 import AssignHospitalToDoctor from "../Component/Modals/DoctorModal/AssignHospitalToDoctor";
 import UpdateDoctorForm from "../Component/Modals/DoctorModal/UpdateDoctorForm";
+import { useIntl } from "react-intl";
+import { useRouter } from "next/router";
 // import { LinkedCalendar } from "rb-datepicker";
 // import "bootstrap-daterangepicker/daterangepicker.css";
 // import { parseDate } from "@internationalized/date";
@@ -46,6 +50,8 @@ function Doctor() {
     schedule_res_doctor,
     medica_res,
     schdule_update_list,
+    time_Slot_list,
+    gender_list,
   } = useSelector((state) => state.fetchdata);
   // const {  } = useSelector((state) => state.submitdata);
   const {
@@ -61,16 +67,20 @@ function Doctor() {
   const [dateRange, setDateRange] = useState([null, null]);
   const [doctorlist, setDoctorList] = useState([]);
   const [specialList, setSpecialList] = useState([]);
+  const [genderList, setGenderList] = useState([]);
   const [startDate, endDate] = dateRange;
 
   const [loader, setLoader] = useState(true);
   const [loader1, setLoader1] = useState(true);
   const [searchq, SetsearchQuery] = useState("");
   const [filterview, setfilterView] = useState(true);
+  const [timeSlotList, setTimeSlotList] = useState([]);
 
+  const [sidebarListloader, setSidebarListLoader] = useState(false);
   const [modalShow, setModalShow] = useState(false);
   const [modalShow1, setModalShow1] = useState(false);
   const [updateform, setUpdateForm] = useState(false);
+  const [searchQuery, setsearchQ] = useState("");
   const [top, setTop] = useState();
   const [stopapi, setStopAPi] = useState(false);
   const [limit, setLimit] = useState(10);
@@ -82,22 +92,22 @@ function Doctor() {
 
   const [editprofiles, setEditProfile] = useState();
   const [editsidecomponent, setEditSideComponent] = useState(false);
-  const [medicaldata, setMedicalData] = useState([]);
+  const [medicaldata, setMedicalData] = useState();
   const [week, setWeekWithDate] = useState([]);
   const [week1, setWeekWithDate1] = useState([]);
   const [sidebarloader, setSidebarLoader] = useState(false);
 
   const editProfile = (e, data, schedule) => {
     e.preventDefault();
-    // console.log("schedule", schedule, data);
-    setEditProfile(data._id);
     if (editprofiles == data._id) {
       setEditProfile();
       setWeekWithDate([
         {
           startDate: data.startDate,
           endDate: data.endDate,
-          timeslot: "",
+          // timeslot: "",
+          timeSlot: null,
+          price: data?.price,
           sunday: "",
           monday: "",
           tuesday: "",
@@ -105,7 +115,7 @@ function Doctor() {
           thursday: "",
           friday: "",
           saturday: "",
-          scheduleId: data?.scheduleId,
+          scheduleId: data?._id,
         },
       ]);
     } else {
@@ -114,7 +124,10 @@ function Doctor() {
         return setWeekWithDate((pre) => [
           ...pre,
           {
-            timeslot: val?.timeslot,
+            // timeslot: val?.timeslot,
+            // timeSlot: val?.timeSlot,
+            timeSlot: val?.timeSlot?._id,
+            price: val?.price,
             startDate: val?.startDate,
             endDate: val?.endDate,
             sunday: val?.sunday,
@@ -124,7 +137,7 @@ function Doctor() {
             thursday: val?.thursday,
             friday: val?.friday,
             saturday: val?.saturday,
-            scheduleId: val?.scheduleId,
+            scheduleId: val?._id,
           },
         ]);
       });
@@ -136,18 +149,26 @@ function Doctor() {
 
   const EditSideComponent = (e, val) => {
     e.preventDefault();
+    // console.log("val,",val)
     setMedicalData(val);
+    localStorage.setItem("medicalid", val?._id);
     setEditSideComponent(true);
     setSidebarLoader(true);
-    dispatch(GetSchedulesByDoctor(val?.doctorId));
+    setsearchQ("");
+    dispatch(GetSchedulesByDoctor(val?._id, ""));
     // window.scroll(0,0)
   };
 
   useEffect(() => {
     // setLoader(true);
 
-    dispatch(MedicalSpecialList());
-    dispatch(MedicalCenterListForModal());
+    dispatch(MedicalSpecialList(0, 500));
+    dispatch(GenderList(0, 500));
+    // dispatch(MedicalCenterListForModal());
+    dispatch(getTimeSlotEnum(0, 500));
+    return () => {
+      dispatch({ type: "GET_TIMESLOT_LIST", payload: "" });
+    };
   }, []);
 
   const APICall = (value) => {
@@ -170,10 +191,11 @@ function Doctor() {
   useEffect(() => {
     if (get_doctor_list) {
       // console.log("sss", get_doctor_list?.data);
-      if (get_doctor_list?.data?.codeStatus === "200") {
+      if (get_doctor_list?.data?.statusCode == "200") {
         setLoader(false);
         // setDoctorList(get_doctor_list?.data?.data?.objectArray);
         setLoader1(false);
+
         if (skip == 0) {
           setDoctorList(get_doctor_list?.data?.data?.objectArray);
           setObjectCount(get_doctor_list?.data?.data?.objectCount);
@@ -209,6 +231,7 @@ function Doctor() {
         });
       }
     }
+
     return () => {
       dispatch({ type: "GET_DOCTOR_LIST", payload: "" });
     };
@@ -217,7 +240,7 @@ function Doctor() {
   useEffect(() => {
     if (medical_special_list) {
       // console.log("sss1", medical_special_list?.data?.data?.objectArray);
-      if (medical_special_list?.data?.statusCode === "200") {
+      if (medical_special_list?.data?.statusCode == "200") {
         setSpecialList(medical_special_list?.data?.data?.objectArray);
       } else {
         Swal.fire({
@@ -229,18 +252,32 @@ function Doctor() {
   }, [medical_special_list]);
 
   useEffect(() => {
+    if (gender_list) {
+      // console.log("sss1", gender_list?.data?.data?.objectArray);
+      if (gender_list?.data?.statusCode == "200") {
+        setGenderList(gender_list?.data?.data?.objectArray);
+      } else {
+        Swal.fire({
+          icon: "error",
+          text: "Something Went Wrong",
+        });
+      }
+    }
+  }, [gender_list]);
+
+  useEffect(() => {
     if (add_doctor_res) {
-      // console.log("add_doctor_res", add_doctor_res)
+      // console.log("add_doctor_res", add_doctor_res);
       if (
-        add_doctor_res?.data?.codeStatus == "200" ||
-        add_doctor_res?.data?.codeStatus == "201"
+        add_doctor_res?.data?.statusCode == "200" ||
+        add_doctor_res?.data?.statusCode == "201"
       ) {
         // setSkip(0);
 
         setSpecilatyFilter("");
         setEditProfile();
         setEditSideComponent();
-        setMedicalData([]);
+        // setMedicalData();
         setEditSideComponent(false);
         setStopAPi(false);
 
@@ -251,20 +288,19 @@ function Doctor() {
         // setSkip(0)
         // setLimit(5)
         // setStopAPi(false)
-        let skips = skip;
-        dispatch(DoctorList(skips, limit, ""));
-      } else if (add_doctor_res?.startsWith("doctors validation faile")) {
+        // let skips = skip;
+        dispatch(DoctorList(skip, limit, ""));
+      } else if (add_doctor_res?.data?.error?.startsWith("ValidationError")) {
         Swal.fire({
           icon: "error",
-          text: add_doctor_res?.substr(0, 26),
+          text: add_doctor_res?.data?.error?.substr(0, 26),
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          text: add_doctor_res,
         });
       }
-      // else {
-      //   Swal.fire({
-      //     icon: "error",
-      //     text: add_doctor_res?.message,
-      //   });
-      // }
     }
     dispatch({ type: "ADD_DOCTOR_RES", payload: "" });
   }, [add_doctor_res]);
@@ -273,16 +309,15 @@ function Doctor() {
     if (update_doctor_res) {
       // console.log("update_doctor_res", update_doctor_res)
       if (
-        update_doctor_res?.data?.codeStatus == "200" ||
-        update_doctor_res?.data?.codeStatus == "201" ||
-        update_medical_res
+        update_doctor_res?.data?.statusCode == "200" ||
+        update_doctor_res?.data?.statusCode == "201"
       ) {
         // setSkip(0);
 
         setSpecilatyFilter("");
         setEditProfile();
         setEditSideComponent();
-        setMedicalData([]);
+        // setMedicalData();
         setEditSideComponent(false);
         setStopAPi(false);
 
@@ -314,12 +349,9 @@ function Doctor() {
   useEffect(() => {
     if (update_doctor_res) {
       // console.log("sss1", update_doctor_res?.data?.data?.objectArray);
-      if (
-        update_doctor_res?.data?.codeStatus === "200" ||
-        update_doctor_res?.data?.codeStatus === "201" ||
-        update_doctor_res
-      ) {
+      if (update_doctor_res?.data?.statusCode == "200") {
         // setSkip(0);
+
         setData([]);
         Swal.fire({
           icon: "success",
@@ -335,7 +367,7 @@ function Doctor() {
         setSpecilatyFilter("");
         setEditProfile();
         // setEditSideComponent();
-        setMedicalData([]);
+        // setMedicalData();
         setEditSideComponent(false);
         setSkip(0);
         dispatch(DoctorList(0, limit, ""));
@@ -383,8 +415,39 @@ function Doctor() {
 
   const optimizedFn = useCallback(
     debounce((valu) => {
+      setSidebarLoader(true);
       APICall(valu);
       setDoctorList([]);
+    }),
+    []
+  );
+
+  // schdule searchList
+
+  const APICall1 = (value) => {
+    // console.log("medicaldata1", medicaldata?._id);
+    let id = localStorage.getItem("medicalid");
+
+    dispatch(GetSchedulesByDoctor(id, value));
+  };
+  const debounce1 = (func) => {
+    let timer;
+    return function (...args) {
+      const context = this;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        func.apply(context, args);
+      }, 500);
+    };
+  };
+
+  const optimizedFn1 = useCallback(
+    debounce1((valu) => {
+      APICall1(valu);
+      setScheduleList([]);
+      setSidebarListLoader(true);
+      // setDoctorList([]);
     }),
     []
   );
@@ -392,9 +455,10 @@ function Doctor() {
   // get sidebar list api respons
   useEffect(() => {
     if (schedule_res_doctor) {
-      if (schedule_res_doctor?.data?.codeStatus == "200") {
+      if (schedule_res_doctor?.data?.statusCode == "200") {
         setScheduleList(schedule_res_doctor?.data?.data?.objectArray);
         setSidebarLoader(false);
+        setSidebarListLoader(false);
       } else {
         Swal.fire({
           icon: "error",
@@ -402,8 +466,10 @@ function Doctor() {
           timer: 2000,
         });
         setEditSideComponent(false);
+        setSidebarListLoader(false);
       }
       setSidebarLoader(false);
+      setSidebarListLoader(false);
     }
     return () => {
       dispatch({ type: "GET_SCHEDULES_RES_DOCTOR", payload: "" });
@@ -412,7 +478,7 @@ function Doctor() {
 
   useEffect(() => {
     if (medica_res) {
-      if (medica_res?.data?.codeStatus == "200") {
+      if (medica_res?.data?.statusCode == "200") {
         // setData(medica_res?.data?.data?.objectArray);
         setData(medica_res?.data?.data?.objectArray);
       } else {
@@ -436,16 +502,25 @@ function Doctor() {
     setWeekWithDate1(newState);
   };
 
+  const setWeekPrice = (e, index) => {
+    e.preventDefault();
+    let newState = [...week];
+    newState[index].price = parseInt(e.target.value);
+    setWeekWithDate1(newState);
+  };
+
   const SetNewWeekValue = (e, val) => {
     e.preventDefault();
     setWeekWithDate((pre) => [
       ...pre,
       {
-        timeslot: "morning",
+        // timeslot: "morning",
+        timeSlot: null,
+
         startDate: "2023-04-05",
         endDate: "2025-02-03",
         price: 25,
-        sunday: false,
+        sunday: true,
         monday: false,
         tuesday: false,
         wednesday: false,
@@ -484,7 +559,8 @@ function Doctor() {
   const setTimeSlot = (e, index) => {
     e.preventDefault();
     let newState = [...week];
-    newState[index].timeslot = e.target.value;
+    // newState[index].timeslot = e.target.value;
+    newState[index].timeSlot = e.target.value;
     setWeekWithDate1(newState);
   };
   useEffect(() => {
@@ -494,10 +570,12 @@ function Doctor() {
     }
   }, [week1]);
 
+  // console.log("medical",medicaldata)
   const [updateapires, setUpateApi] = useState();
   const [price, setPrice] = useState();
   const UpdateScdehule = (e, scduleid, medicalid, medicalobje) => {
     setSidebarLoader(true);
+    setsearchQ("");
     // console.log("ssd",medicalobje,medicaldata)
     // for (let i = 0; i < week?.length; i++) {
     //   setUpateApi(true);
@@ -529,10 +607,20 @@ function Doctor() {
 
     if (newRow) {
       for (let i = 0; i < newRow?.length; i++) {
+        if (newRow[i]?.price < 0) {
+          setSidebarLoader(false);
+          return Swal.fire({
+            text: "Price Must Be Greater Then Or Equal To Zero",
+            icon: "error",
+          });
+        }
+      }
+      for (let i = 0; i < newRow?.length; i++) {
         const data = {
-          medicalCenterId: medicalobje?.medicalCenterId,
-          doctorId: medicaldata?.doctorId,
-          timeslot: newRow[i]?.timeslot,
+          medicalCenterId: medicalobje?._id,
+          doctorId: medicaldata?._id,
+          timeSlot: newRow[i]?.timeSlot ? newRow[i]?.timeSlot : null,
+          // timeSlotId: newRow[i]?.timeSlotId ? newRow[i]?.timeSlotId : null,
           startDate: newRow[i]?.startDate,
           endDate: newRow[i]?.endDate,
           sunday: newRow[i]?.sunday,
@@ -541,18 +629,28 @@ function Doctor() {
           wednesday: newRow[i]?.wednesday,
           thursday: newRow[i]?.thursday,
           friday: newRow[i]?.friday,
-          price: price ? parseInt(price) : 50,
+          price: newRow[i]?.price,
           saturday: newRow[i]?.saturday,
         };
-        // console.log("val",val)
         dispatch(createSchedulesByDoctorForScdeule(data));
       }
     }
     if (oldRow) {
       for (let i = 0; i < oldRow?.length; i++) {
+        if (oldRow[i]?.price < 0) {
+          setSidebarLoader(false);
+          return Swal.fire({
+            icon: "error",
+            text: "Price Must Be Greater Then Or Equal To Zero",
+          });
+        }
+      }
+      for (let i = 0; i < oldRow?.length; i++) {
         setUpateApi(true);
+
         let data = {
-          timeslot: oldRow[i]?.timeslot,
+          // timeslot: oldRow[i]?.timeslot,
+          timeSlot: oldRow[i]?.timeSlot ? oldRow[i]?.timeSlot : null,
           startDate: oldRow[i]?.startDate,
           endDate: oldRow[i]?.endDate,
           sunday: oldRow[i]?.sunday,
@@ -561,11 +659,12 @@ function Doctor() {
           wednesday: oldRow[i]?.wednesday,
           thursday: oldRow[i]?.thursday,
           friday: oldRow[i]?.friday,
-          price: price,
+          price: oldRow[i]?.price,
           saturday: oldRow[i]?.saturday,
         };
         dispatch(updateMedicalSchedule(oldRow[i]?.scheduleId, data));
       }
+
       setUpateApi(false);
     }
   };
@@ -573,11 +672,11 @@ function Doctor() {
   useEffect(() => {
     if (cretate_schedule_res && update_schedule_res == "") {
       if (
-        cretate_schedule_res?.data?.codeStatus == "200" ||
-        cretate_schedule_res?.data?.codeStatus == "201"
+        cretate_schedule_res?.data?.statusCode == "200" ||
+        cretate_schedule_res?.data?.statusCode == "201"
       ) {
         setSidebarLoader(true);
-        dispatch(GetSchedulesByDoctor(medicaldata?.doctorId));
+        dispatch(GetSchedulesByDoctor(medicaldata?._id, ""));
         Swal.fire({
           icon: "success",
           text: cretate_schedule_res?.data?.message,
@@ -600,17 +699,12 @@ function Doctor() {
   useEffect(() => {
     if (create_schdeule_Res_to_doctor) {
       if (
-        create_schdeule_Res_to_doctor?.data?.codeStatus == "200" ||
-        create_schdeule_Res_to_doctor?.data?.codeStatus == "201"
+        create_schdeule_Res_to_doctor?.data?.statusCode == "200" ||
+        create_schdeule_Res_to_doctor?.data?.statusCode == "201"
       ) {
-        dispatch(GetSchedulesByDoctorForScdhule(medicaldata?.doctorId));
+        // dispatch(GetSchedulesByDoctorForScdhule(medicaldata?.doctorId));
+        dispatch(GetSchedulesByDoctorForScdhule(medicaldata?._id));
         setSidebarLoader(false);
-
-        // Swal.fire({
-        //   icon: "success",
-        //   text: create_schdeule_Res_to_doctor?.data?.message,
-        //   timer: 2000,
-        // });
       } else {
         Swal.fire({
           icon: "error",
@@ -627,11 +721,7 @@ function Doctor() {
 
   useEffect(() => {
     if (schdule_update_list) {
-      if (
-        schdule_update_list?.data?.codeStatus == "200" ||
-        schdule_update_list?.data?.codeStatus == "201" ||
-        schdule_update_list
-      ) {
+      if (schdule_update_list?.data?.statusCode == "200") {
         // setMedicalData([]);
         setWeekWithDate();
         setWeekWithDate1();
@@ -661,15 +751,15 @@ function Doctor() {
   useEffect(() => {
     if (delete_schedule) {
       if (
-        delete_schedule?.data?.codeStatus == "200" ||
-        delete_schedule?.data?.codeStatus == "201" ||
+        delete_schedule?.data?.statusCode == "200" ||
+        delete_schedule?.data?.statusCode == "201" ||
         delete_schedule?.data.message
       ) {
         // setWeekWithDate();
         // setWeekWithDate1();
         setEditProfile([]);
         setSidebarLoader(false);
-        dispatch(GetSchedulesByDoctor(medicaldata?.doctorId));
+        dispatch(GetSchedulesByDoctor(medicaldata?._id, ""));
         Swal.fire({
           icon: "success",
           text: delete_schedule?.data?.message,
@@ -696,15 +786,11 @@ function Doctor() {
       updateapires == false &&
       cretate_schedule_res == ""
     ) {
-      if (
-        update_schedule_res?.data?.codeStatus == "200" ||
-        update_schedule_res?.data?.codeStatus == "201" ||
-        update_schedule_res
-      ) {
+      if (update_schedule_res?.data?.statusCode == "200") {
         // setWeekWithDate();
         // setWeekWithDate1();
         setEditProfile([]);
-        dispatch(GetSchedulesByDoctor(medicaldata?.doctorId));
+        dispatch(GetSchedulesByDoctor(medicaldata?._id, ""));
         Swal.fire({
           icon: "success",
           text: "Schedule Update SuccessFully",
@@ -761,9 +847,8 @@ function Doctor() {
   const [totalshdule, setTotalSchduleLenght] = useState(false);
   const DeleteAllSchdeule = (e, val) => {
     e.preventDefault();
-    console.log("delte", val);
     const scduleList = val?.scheduleList?.map((v) => {
-      return v.scheduleId;
+      return v._id;
     });
 
     for (let i = 0; i < scduleList?.length; i++) {
@@ -775,8 +860,8 @@ function Doctor() {
   useEffect(() => {
     if (delete_schedule_one_by_one && totalshdule) {
       if (
-        delete_schedule_one_by_one?.data?.codeStatus == "200" ||
-        delete_schedule_one_by_one?.data?.codeStatus == "201" ||
+        delete_schedule_one_by_one?.data?.statusCode == "200" ||
+        delete_schedule_one_by_one?.data?.statusCode == "201" ||
         delete_schedule_one_by_one
       ) {
         setWeekWithDate();
@@ -784,7 +869,7 @@ function Doctor() {
         setWeekWithDate1();
         setEditProfile([]);
 
-        dispatch(GetSchedulesByDoctor(medicaldata?.doctorId));
+        dispatch(GetSchedulesByDoctor(medicaldata?._id, ""));
         Swal.fire({
           icon: "success",
           text: "Success",
@@ -806,17 +891,32 @@ function Doctor() {
     };
   }, [delete_schedule_one_by_one]);
 
+  useEffect(() => {
+    if (time_Slot_list) {
+      if (time_Slot_list?.data?.statusCode == "200") {
+        setTimeSlotList(time_Slot_list?.data?.data?.objectArray);
+      } else {
+        Swal.fire({
+          icon: "error",
+          text: "Something Went Wrong In Doctor List API",
+        });
+      }
+    }
+  }, [time_Slot_list]);
+  const { formatMessage: covert } = useIntl();
+  const { locale } = useRouter();
+  // console.log("medicaldata1", medicaldata);
   return (
     <div>
       <div className="main-content">
         <div className="flter-section">
-          <h3 class="fltr-drop">Filter</h3>
+          <h3 class="fltr-drop">{covert({ id: "filter" })}</h3>
           <div className={filterview ? "mt-4" : "removefltr"}>
             <div className="slct-srt">
               <Row>
                 <Col lg={2} md={3}>
                   <div className="flter d-inline">
-                    <label>Filter by Speciality</label>
+                    <label>{covert({ id: "FilterBySpecilaty" })}</label>
                     <select
                       onChange={(e) => {
                         setSkip(0);
@@ -826,13 +926,14 @@ function Doctor() {
                       value={specialityFilter}
                     >
                       <option value={""} selected>
-                        --Select Speciality--
+                        {/* --Select Speciality-- */}
+                        {covert({ id: "selectSpecilaity" })}
                       </option>
 
                       {specialList &&
                         specialList?.map((v, ia) => (
-                          <option key={ia} value={v?.backendName}>
-                            {v?.displayName}
+                          <option key={ia} value={v?._id}>
+                            {locale == "ar" ? v?.arabicName : v?.englishName}
                           </option>
                         ))}
                     </select>
@@ -840,7 +941,8 @@ function Doctor() {
                 </Col>
                 <Col lg={2} md={3}>
                   <div className="flter d-inline">
-                    <label>Filter by Level</label>
+                    {/* <label>Filter by Level</label> */}
+                    <label>{covert({ id: "FilterByLevel" })}</label>
                     <select>
                       <option value="" selected>
                         Level
@@ -855,9 +957,10 @@ function Doctor() {
                     <div className="srch-text">
                       <input
                         type="text"
-                        placeholder="Search here..."
+                        placeholder={covert({ id: "Search" })}
                         onChange={(e) => {
                           setLoader(true);
+                          setEditSideComponent(false);
                           SetsearchQuery(e.target.value);
                           optimizedFn(e.target.value);
                         }}
@@ -869,12 +972,14 @@ function Doctor() {
                 <Col lg={4} md={3} className="text-end">
                   <div className="benfits-btn agn-btn">
                     <button onClick={() => setModalShow1(true)}>
-                      + Add New Data
+                      {/* + Add New Data */}
+                      {covert({ id: "AddNewData" })}
                     </button>
                     <AddNewDoctorModal
                       show={modalShow1}
                       onHide={() => setModalShow1(false)}
                       specialLists={specialList}
+                      genderList={genderList}
                     />
                   </div>
                 </Col>
@@ -887,39 +992,47 @@ function Doctor() {
           <Row>
             <Col lg={editsidecomponent ? 8 : 12} md={12}>
               <div className="restet-tble">
-                <h3>Doctors</h3>
-                <div className="data-tble fixheder-tbl mdcl-cntr">
+                <h3>{covert({ id: "Doctor" })}</h3>
+                <div className={"data-tble fixheder-tbl mdcl-cntr short-ss"}>
                   {/* <Table className="table-responsive" onScroll={handleScroll}> */}
                   <Table>
                     <thead>
                       <tr>
-                        <th>Doctor ID</th>
-                        <th>Doctor Name</th>
-                        <th>Gender</th>
-                        <th>Specialty</th>
-                        <th>Level</th>
-                        <th>Birthdate (Age)</th>
+                        <th>{covert({ id: "doctorid" })}</th>
+                        <th>{covert({ id: "doctorsname" })}</th>
+                        <th>{covert({ id: "gender" })}</th>
+                        <th>{covert({ id: "Specialty" })}</th>
+                        <th>{covert({ id: "level" })}</th>
+                        <th>{covert({ id: "birthday(age)" })}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {doctorlist &&
                         doctorlist?.map((val, i) => (
                           <tr
-                            onClick={(e) => EditSideComponent(e, val)}
+                            onClick={(e) => {
+                              setEditProfile();
+
+                              setWeekWithDate([]);
+                              setWeekWithDate1([]);
+                              setMedicalData([]);
+                              EditSideComponent(e, val);
+                            }}
                             key={i}
                           >
-                            <td>{val?.doctorId}</td>
+                            {/* <td>{val?.doctorId}</td> */}
+                            <td>{val?._id}</td>
                             <td>
                               {val?.firstName +
                                 " " +
-                                val?.middleName +
+                                val?.secondName +
                                 " " +
                                 val?.lastName}
                             </td>
-                            <td>{val?.gender}</td>
-                            <td>{val?.specialty}</td>
+                            <td>{val?.gender?.englishName}</td>
+                            <td>{val?.specialty?.englishName}</td>
                             <td>{val?.level}</td>
-                            <td>{val?.birthdate} (Age)</td>
+                            <td>{val?.birthdate}</td>
                           </tr>
                         ))}
                     </tbody>
@@ -951,7 +1064,7 @@ function Doctor() {
                 <center>
                   <button className="load-more-btn mb-5" onClick={LoadMore}>
                     {" "}
-                    Load More{" "}
+                    {covert({ id: "loadmore" })}
                   </button>
                 </center>
               ) : (
@@ -972,7 +1085,7 @@ function Doctor() {
                           <h3>
                             {medicaldata?.firstName +
                               " " +
-                              medicaldata?.middleName +
+                              medicaldata?.secondName +
                               " " +
                               medicaldata?.lastName}{" "}
                             <span>
@@ -992,14 +1105,14 @@ function Doctor() {
                     </div>
                     <div className="cntr-hedr sdul-dr">
                       <h4>
-                        3 Doctors Scheduled
+                        {sidebarList && sidebarList?.length} Doctors Scheduled
                         <span>Closest Exparation Date is 15-09-2022</span>
                       </h4>
                       <button
                         onClick={() => setModalShow(true)}
                         className="wht-btn-br"
                       >
-                        + Add Hospital
+                        + {covert({ id: "Add Hospital" })}
                       </button>
                       <AssignHospitalToDoctor
                         centerlist={data}
@@ -1007,21 +1120,29 @@ function Doctor() {
                         onHide={() => setModalShow(false)}
                         medicaldata={medicaldata}
                         previosMedical={sidebarList}
-                      
                       />
 
                       <UpdateDoctorForm
                         centerlist={data}
                         show={updateform}
                         specialLists={specialList}
+                        genderList={genderList}
                         medicaldata={medicaldata}
                         previosMedical={sidebarList}
                         onHide={() => setUpdateForm(false)}
                       />
                     </div>
                     <div className="cntr-hedr align-items-center">
-                      <div class="srch-text">
-                        <input type="text" placeholder="Search here..." />
+                      <div class="srch-text ar-mn">
+                        <input
+                          type="text"
+                          placeholder={covert({ id: "Search" })}
+                          onChange={(e) => {
+                            optimizedFn1(e.target.value);
+                            setsearchQ(e.target.value);
+                          }}
+                          value={searchQuery}
+                        />
                         <img src={"/assets/images/srch-1.svg"} alt="img" />
                       </div>
                       <img
@@ -1031,613 +1152,611 @@ function Doctor() {
                       />
                     </div>
                   </div>
-                  <div className="wrap-in-scroll">
-                    {sidebarList &&
-                      sidebarList?.map((val, index) => (
-                        <div
-                          className={
-                            editprofiles?.includes(
-                              val?.medicalCenterObject?._id
-                            )
-                              ? "lst-sdual edit-lst"
-                              : "lst-sdual"
-                          }
-                        >
-                          {editprofiles?.includes(
-                            val?.medicalCenterObject?._id
-                          ) ? (
-                            <button
-                              className="sdal-dlte cntr-btn-texx"
-                              onClick={(e) => DeleteAllSchdeule(e, val)}
-                            >
-                              Delete
-                            </button>
-                          ) : (
-                            ""
-                          )}
-                          <div className="user-dtl">
-                            <div className="tle-cntr-name">
-                              <img
-                                src={"/assets/images/avatar.svg"}
-                                alt="img"
-                              />
-                              <h4>
-                                {val?.medicalCenterObject?.name}
-                                <span>ID : 123331</span>
-                              </h4>
-                            </div>
-                            <img
-                              src={"/assets/images/edit-2.svg"}
-                              alt="img"
-                              onClick={(e) =>
-                                editProfile(
-                                  e,
-                                  val?.medicalCenterObject,
-                                  val?.scheduleList
-                                )
-                              }
-                            />
-                          </div>
-                          <div className="speciality-dctr">
-                            <p>
-                              <label>Speciality:</label>
-                              <OverlayTrigger
-                                placement="top"
-                                overlay={
-                                  <Tooltip id={`tooltip-${index}`}>
-                                    <p>{medicaldata?.specialty}</p>
-                                  </Tooltip>
-                                }
-                              >
-                                <p>
-                                  {medicaldata?.specialty?.substr(0, 10)}
-                                  {medicaldata?.specialty?.substring(10) ? (
-                                    <>....</>
-                                  ) : (
-                                    ""
-                                  )}
-                                </p>
-                              </OverlayTrigger>
-                            </p>
-                            <p>
-                              <label>Level:</label>
-                              {medicaldata?.level}
-                              {/* {val?.medicalCenterObject?.level} */}
-                              {editprofiles?.includes(
-                                val?.medicalCenterObject?._id
-                              ) ? (
-                                <span>
-                                  <input
-                                    type="text"
-                                    placeholder="20 Dinar"
-                                    name="money"
-                                    defaultValue={val?.scheduleList?.[0]?.price}
-                                    onChange={(e) => setPrice(e.target.value)}
-                                  />
-                                </span>
-                              ) : (
-                                <span>
-                                  {val?.scheduleList?.[0]?.price} Dinar
-                                </span>
-                              )}
-                            </p>
-                          </div>
 
-                          {editprofiles?.includes(
-                            val?.medicalCenterObject?._id
-                          ) ? (
-                            <>
-                              {week?.map((value, index) => (
-                                <>
-                                  <div className="time-section">
-                                    <div className="mrng-time">
-                                      <div>
-                                        {editprofiles?.includes(
-                                          val?.medicalCenterObject?._id
-                                        ) ? (
-                                          <div>
-                                            <select
-                                              name="timeslot"
-                                              onChange={(e) =>
-                                                setTimeSlot(e, index)
-                                              }
-                                              value={value?.timeslot}
-                                            >
-                                              <option value="morning">
-                                                morning
-                                              </option>
-                                              <option value="afternoon">
-                                                afternoon
-                                              </option>
-                                              <option value="evening">
-                                                evening
-                                              </option>
-                                            </select>
-                                            {/* <input
-                                              type="checkbox"
-                                              value={"monday"}
-                                              onChange={(e) =>
-                                                setWeekState(e, index, "monday")
-                                              }
-                                              checked={value?.monday}
-                                            />{" "} */}
-                                            <ul>
-                                              <li>
-                                                <input
-                                                  type="checkbox"
-                                                  value={"monday"}
-                                                  onChange={(e) =>
-                                                    setWeekState(
-                                                      e,
-                                                      index,
-                                                      "monday"
-                                                    )
-                                                  }
-                                                  checked={value?.monday}
-                                                />{" "}
-                                                <span>Mon</span>{" "}
-                                              </li>
-                                              <li>
-                                                <input
-                                                  type="checkbox"
-                                                  value={"tuesday"}
-                                                  onChange={(e) =>
-                                                    setWeekState(
-                                                      e,
-                                                      index,
-                                                      "tuesday"
-                                                    )
-                                                  }
-                                                  checked={value?.tuesday}
-                                                />{" "}
-                                                <span>Tue</span>{" "}
-                                              </li>
-                                              <li>
-                                                <input
-                                                  type="checkbox"
-                                                  value={"wednesday"}
-                                                  onChange={(e) =>
-                                                    setWeekState(
-                                                      e,
-                                                      index,
-                                                      "wednesday"
-                                                    )
-                                                  }
-                                                  checked={value?.wednesday}
-                                                />{" "}
-                                                <span>Wed</span>{" "}
-                                              </li>
-                                              <li>
-                                                <input
-                                                  type="checkbox"
-                                                  value={"thursday"}
-                                                  onChange={(e) =>
-                                                    setWeekState(
-                                                      e,
-                                                      index,
-                                                      "thursday"
-                                                    )
-                                                  }
-                                                  checked={value?.thursday}
-                                                />{" "}
-                                                <span>Thu</span>{" "}
-                                              </li>
-                                              <li>
-                                                <input
-                                                  type="checkbox"
-                                                  onChange={(e) =>
-                                                    setWeekState(
-                                                      e,
-                                                      index,
-                                                      "friday"
-                                                    )
-                                                  }
-                                                  value={"friday"}
-                                                  checked={value?.friday}
-                                                />{" "}
-                                                <span>Fri</span>{" "}
-                                              </li>
-                                              <li>
-                                                <input
-                                                  type="checkbox"
-                                                  onChange={(e) =>
-                                                    setWeekState(
-                                                      e,
-                                                      index,
-                                                      "saturday"
-                                                    )
-                                                  }
-                                                  value={"saturday"}
-                                                  checked={value?.saturday}
-                                                />{" "}
-                                                <span>Sat</span>{" "}
-                                              </li>
-                                              <li>
-                                                <input
-                                                  type="checkbox"
-                                                  onChange={(e) =>
-                                                    setWeekState(
-                                                      e,
-                                                      index,
-                                                      "sunday"
-                                                    )
-                                                  }
-                                                  value={"sunday"}
-                                                  checked={value?.sunday}
-                                                />{" "}
-                                                <span>Sun</span>{" "}
-                                              </li>
-                                            </ul>
-                                          </div>
-                                        ) : (
-                                          <div>
-                                            <p>{value?.timeslot}</p>
-                                            <ul>
-                                              <li
-                                                className={
-                                                  value?.monday ? "active" : ""
-                                                }
-                                              >
-                                                Mon
-                                              </li>
-                                              <li
-                                                className={
-                                                  value?.tuesday ? "active" : ""
-                                                }
-                                              >
-                                                Tue
-                                              </li>
-                                              <li
-                                                className={
-                                                  value?.wednesday
-                                                    ? "active"
-                                                    : ""
-                                                }
-                                              >
-                                                Wed
-                                              </li>
-                                              <li
-                                                className={
-                                                  value?.thursday
-                                                    ? "active"
-                                                    : ""
-                                                }
-                                              >
-                                                Thu
-                                              </li>
-                                              <li
-                                                className={
-                                                  value?.friday ? "active" : ""
-                                                }
-                                              >
-                                                Fri
-                                              </li>
-                                              <li
-                                                className={
-                                                  value?.saturday
-                                                    ? "active"
-                                                    : ""
-                                                }
-                                              >
-                                                Sat
-                                              </li>
-                                              <li
-                                                className={
-                                                  value?.sunday ? "active " : ""
-                                                }
-                                              >
-                                                Sun
-                                              </li>
-                                            </ul>
-                                          </div>
-                                        )}
-                                      </div>
-                                      {editprofiles?.includes(
-                                        val?.medicalCenterObject?._id
-                                      ) ? (
-                                        <>
-                                          <div>
-                                            <div className="date-rng dte-pck-input">
-                                              <img src={""} alt="img" />
-                                              <label>Date Range</label>
-                                              {/* <DatePicker
-                                            selectsRange
-                                            startDate={
-                                              new Date(value?.startdate)
-                                            }
-                                            endDate={new Date(value?.startdate)}
-                                            onChange={(update) => {
-                                              // console.log("ip", update);
-                                              // setDateRange(update);
-                                              setDatas(update);
-                                            }}
-                                            isClearable={false}
-                                          /> */}
-                                              {/* <DatePicker
-                                            selectsRange={true}
-                                            // startDate={startDate}
-                                            // endDate={endDate}
-                                            onChange={(update) => {
-                                              setDateRange(update);
-                                            }}
-                                            isClearable={true}
-                                          /> */}
-                                              {/* <DatePicker
-                                              showIcon
-                                              // dateFormat={"DD-MM-YYYY"}
-                                              name="startDate"
-                                              selected={value?.startdate}
-                                              onChange={SetWeekDate}
-                                            /> */}
-                                              <input
-                                                type="date"
-                                                // value={ConvertDate(
-                                                //   value?.startdate
-                                                // )}
-                                                value={value?.startDate}
-                                                // value={}
+                  {sidebarListloader ? (
+                    <center>
+                      <div className="loader-img text-center  m-5">
+                        <img
+                          src={"/assets/images/ball-triangle.svg"}
+                          alt="img"
+                        />
+                      </div>
+                    </center>
+                  ) : (
+                    <div className="wrap-in-scroll">
+                      {sidebarList &&
+                        sidebarList?.map((val, index) => (
+                          <div
+                            className={
+                              editprofiles?.includes(val?.medicalCenter?._id)
+                                ? "lst-sdual edit-lst"
+                                : "lst-sdual"
+                            }
+                          >
+                            {editprofiles?.includes(val?.medicalCenter?._id) ? (
+                              <button
+                                className="sdal-dlte cntr-btn-texx"
+                                onClick={(e) => DeleteAllSchdeule(e, val)}
+                              >
+                                {covert({ id: "Delete" })}
+                              </button>
+                            ) : (
+                              ""
+                            )}
+                            <div className="user-dtl">
+                              <div className="tle-cntr-name">
+                                <img
+                                  src={"/assets/images/avatar.svg"}
+                                  alt="img"
+                                />
+                                <h4>
+                                  {val?.medicalCenter?.name}
+                                  <span>ID : 123331</span>
+                                </h4>
+                              </div>
+                              <img
+                                src={"/assets/images/edit-2.svg"}
+                                alt="img"
+                                onClick={(e) => {
+                                  editProfile(
+                                    e,
+                                    val?.medicalCenter,
+                                    val?.scheduleList
+                                  );
+                                }}
+                              />
+                            </div>
+                            <div className="speciality-dctr">
+                              <p>
+                                <label>{covert({ id: "Speciality" })}:</label>
+                                <OverlayTrigger
+                                  placement="top"
+                                  overlay={
+                                    <Tooltip id={`tooltip-${index}`}>
+                                      <p>{medicaldata?.specialty}</p>
+                                    </Tooltip>
+                                  }
+                                >
+                                  <p>
+                                    {/* {medicaldata?.specialty?.substr(0, 10)}
+                                     {medicaldata?.specialty?.substring(10) ? (
+                                       <>....</>
+                                     ) : (
+                                       ""
+                                     )} */}
+                                  </p>
+                                </OverlayTrigger>
+                              </p>
+                              <p>
+                                <label>Level:</label>
+                                {medicaldata?.level}
+                                {/* {val?.medicalCenterObject?.level} */}
+                              </p>
+                            </div>
+
+                            {editprofiles?.includes(val?.medicalCenter?._id) ? (
+                              <>
+                                {week?.map((value, index) => (
+                                  <>
+                                    <div className="time-section">
+                                      <div className="mrng-time">
+                                        <div>
+                                          {editprofiles?.includes(
+                                            val?.medicalCenter?._id
+                                          ) ? (
+                                            <div>
+                                              <select
+                                                name="timeSlot"
                                                 onChange={(e) =>
-                                                  SetWeekDate(
-                                                    e,
-                                                    index,
-                                                    "startDate"
-                                                  )
+                                                  setTimeSlot(e, index)
                                                 }
-                                              />
+                                                value={value?.timeSlot}
+                                              >
+                                                <option selected>
+                                                  {/* --Select TimeSlot-- */}
+                                                  {covert({
+                                                    id: "Select TimeSlot",
+                                                  })}
+                                                </option>
+                                                {timeSlotList &&
+                                                  timeSlotList?.map((v, i) => (
+                                                    <option value={v._id}>
+                                                      {locale == "ar"
+                                                        ? v?.arabicName
+                                                        : v?.englishName}
+                                                    </option>
+                                                  ))}
+                                              </select>
+                                              {/* <input
+                                                 type="checkbox"
+                                                 value={"monday"}
+                                                 onChange={(e) =>
+                                                   setWeekState(e, index, "monday")
+                                                 }
+                                                 checked={value?.monday}
+                                               />{" "} */}
+                                              <ul>
+                                                <li>
+                                                  <input
+                                                    type="checkbox"
+                                                    value={"monday"}
+                                                    onChange={(e) =>
+                                                      setWeekState(
+                                                        e,
+                                                        index,
+                                                        "monday"
+                                                      )
+                                                    }
+                                                    checked={value?.monday}
+                                                  />{" "}
+                                                  <span>Mon</span>{" "}
+                                                </li>
+                                                <li>
+                                                  <input
+                                                    type="checkbox"
+                                                    value={"tuesday"}
+                                                    onChange={(e) =>
+                                                      setWeekState(
+                                                        e,
+                                                        index,
+                                                        "tuesday"
+                                                      )
+                                                    }
+                                                    checked={value?.tuesday}
+                                                  />{" "}
+                                                  <span>Tue</span>{" "}
+                                                </li>
+                                                <li>
+                                                  <input
+                                                    type="checkbox"
+                                                    value={"wednesday"}
+                                                    onChange={(e) =>
+                                                      setWeekState(
+                                                        e,
+                                                        index,
+                                                        "wednesday"
+                                                      )
+                                                    }
+                                                    checked={value?.wednesday}
+                                                  />{" "}
+                                                  <span>Wed</span>{" "}
+                                                </li>
+                                                <li>
+                                                  <input
+                                                    type="checkbox"
+                                                    value={"thursday"}
+                                                    onChange={(e) =>
+                                                      setWeekState(
+                                                        e,
+                                                        index,
+                                                        "thursday"
+                                                      )
+                                                    }
+                                                    checked={value?.thursday}
+                                                  />{" "}
+                                                  <span>Thu</span>{" "}
+                                                </li>
+                                                <li>
+                                                  <input
+                                                    type="checkbox"
+                                                    onChange={(e) =>
+                                                      setWeekState(
+                                                        e,
+                                                        index,
+                                                        "friday"
+                                                      )
+                                                    }
+                                                    value={"friday"}
+                                                    checked={value?.friday}
+                                                  />{" "}
+                                                  <span>Fri</span>{" "}
+                                                </li>
+                                                <li>
+                                                  <input
+                                                    type="checkbox"
+                                                    onChange={(e) =>
+                                                      setWeekState(
+                                                        e,
+                                                        index,
+                                                        "saturday"
+                                                      )
+                                                    }
+                                                    value={"saturday"}
+                                                    checked={value?.saturday}
+                                                  />{" "}
+                                                  <span>Sat</span>{" "}
+                                                </li>
+                                                <li>
+                                                  <input
+                                                    type="checkbox"
+                                                    onChange={(e) =>
+                                                      setWeekState(
+                                                        e,
+                                                        index,
+                                                        "sunday"
+                                                      )
+                                                    }
+                                                    value={"sunday"}
+                                                    checked={value?.sunday}
+                                                  />{" "}
+                                                  <span>Sun</span>{" "}
+                                                </li>
+                                              </ul>
+                                            </div>
+                                          ) : (
+                                            <div>
+                                              <p>
+                                                {locale == "ar"
+                                                  ? value?.timeSlot?.arabicName
+                                                  : value?.timeSlot
+                                                      ?.englishName}
+                                              </p>
+                                              <ul>
+                                                <li
+                                                  className={
+                                                    value?.monday
+                                                      ? "active"
+                                                      : ""
+                                                  }
+                                                >
+                                                  Mon
+                                                </li>
+                                                <li
+                                                  className={
+                                                    value?.tuesday
+                                                      ? "active"
+                                                      : ""
+                                                  }
+                                                >
+                                                  Tue
+                                                </li>
+                                                <li
+                                                  className={
+                                                    value?.wednesday
+                                                      ? "active"
+                                                      : ""
+                                                  }
+                                                >
+                                                  Wed
+                                                </li>
+                                                <li
+                                                  className={
+                                                    value?.thursday
+                                                      ? "active"
+                                                      : ""
+                                                  }
+                                                >
+                                                  Thu
+                                                </li>
+                                                <li
+                                                  className={
+                                                    value?.friday
+                                                      ? "active"
+                                                      : ""
+                                                  }
+                                                >
+                                                  Fri
+                                                </li>
+                                                <li
+                                                  className={
+                                                    value?.saturday
+                                                      ? "active"
+                                                      : ""
+                                                  }
+                                                >
+                                                  Sat
+                                                </li>
+                                                <li
+                                                  className={
+                                                    value?.sunday
+                                                      ? "active "
+                                                      : ""
+                                                  }
+                                                >
+                                                  Sun
+                                                </li>
+                                              </ul>
+                                            </div>
+                                          )}
+                                        </div>
+                                        {editprofiles?.includes(
+                                          val?.medicalCenter?._id
+                                        ) ? (
+                                          <>
+                                            <div>
+                                              <div className="date-rng dte-pck-input">
+                                                <img
+                                                  src={
+                                                    "/assets/images/rnge-dae.svg"
+                                                  }
+                                                  alt="img"
+                                                />
+                                                <label>
+                                                  {covert({ id: "Date Range" })}
+                                                </label>
+                                                {/* <DatePicker
+                                               selectsRange
+                                               startDate={
+                                                 new Date(value?.startdate)
+                                               }
+                                               endDate={new Date(value?.startdate)}
+                                               onChange={(update) => {
+                                                 // console.log("ip", update);
+                                                 // setDateRange(update);
+                                                 setDatas(update);
+                                               }}
+                                               isClearable={false}
+                                             /> */}
+                                                {/* <DatePicker
+                                               selectsRange={true}
+                                               // startDate={startDate}
+                                               // endDate={endDate}
+                                               onChange={(update) => {
+                                                 setDateRange(update);
+                                               }}
+                                               isClearable={true}
+                                             /> */}
+                                                {/* <DatePicker
+                                                 showIcon
+                                                 // dateFormat={"DD-MM-YYYY"}
+                                                 name="startDate"
+                                                 selected={value?.startdate}
+                                                 onChange={SetWeekDate}
+                                               /> */}
+                                                <input
+                                                  type="date"
+                                                  // value={ConvertDate(
+                                                  //   value?.startdate
+                                                  // )}
+                                                  value={value?.startDate}
+                                                  // value={}
+                                                  onChange={(e) =>
+                                                    SetWeekDate(
+                                                      e,
+                                                      index,
+                                                      "startDate"
+                                                    )
+                                                  }
+                                                />
+                                              </div>
+
+                                              <div className="date1-rng dte-pck-input enddate mt-2">
+                                                <img
+                                                  src={
+                                                    "/assets/images/rnge-dae.svg"
+                                                  }
+                                                  alt="img"
+                                                />
+
+                                                <input
+                                                  type="date"
+                                                  value={value?.endDate}
+                                                  onChange={(e) =>
+                                                    SetWeekEndDate(
+                                                      e,
+                                                      index,
+                                                      "endDate"
+                                                    )
+                                                  }
+                                                />
+                                              </div>
                                             </div>
 
-                                            <div className="date1-rng dte-pck-input enddate mt-2">
+                                            <div>
+                                              {value?.scheduleId ? (
+                                                <span
+                                                  className="dtl-icn-fun"
+                                                  onClick={(e) =>
+                                                    DeleteScdule(e, value)
+                                                  }
+                                                >
+                                                  <AiFillDelete
+                                                    style={{
+                                                      color: "red",
+                                                      cursor: "pointer",
+                                                    }}
+                                                  />
+                                                </span>
+                                              ) : (
+                                                <span
+                                                  onClick={(e) =>
+                                                    DeleteRow(e, index)
+                                                  }
+                                                >
+                                                  <AiFillDelete
+                                                    style={{
+                                                      color: "red",
+                                                      cursor: "pointer",
+                                                      marginLeft: "10px",
+                                                    }}
+                                                  />
+                                                </span>
+                                              )}
+                                            </div>
+                                          </>
+                                        ) : (
+                                          <div className="date-rng date-clr">
+                                            <label>
+                                              {covert({ id: "Date Range" })}
+                                            </label>
+                                            <span>
                                               <img
                                                 src={
                                                   "/assets/images/rnge-dae.svg"
                                                 }
                                                 alt="img"
                                               />
-                                              {/* <label>Date Range</label> */}
-                                              {/* <DatePicker
-                                            selectsRange
-                                            startDate={
-                                              new Date(value?.startdate)
-                                            }
-                                            endDate={new Date(value?.startdate)}
-                                            onChange={(update) => {
-                                              // console.log("ip", update);
-                                              // setDateRange(update);
-                                              setDatas(update);
-                                            }}
-                                            isClearable={false}
-                                          /> */}
-                                              {/* <DatePicker
-                                            selectsRange={true}
-                                            // startDate={startDate}
-                                            // endDate={endDate}
-                                            onChange={(update) => {
-                                              setDateRange(update);
-                                            }}
-                                            isClearable={true}
-                                          /> */}
-                                              {/* <DatePicker
-                                              showIcon
-                                              // selected={value?.enddate}
-                                              onChange={(date) => {
-                                                console.log("date", date);
-                                                setStartDate(date);
-                                              }}
-                                            /> */}
+                                              {moment(value?.startDate).format(
+                                                "LL"
+                                              )}{" "}
+                                              -{" "}
+                                              {moment(value?.endDate).format(
+                                                "LL"
+                                              )}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="price">
+                                      <span>{covert({ id: "Price" })}: </span>
+                                      <span>
+                                        <input
+                                          type="number"
+                                          placeholder="20 Dinar"
+                                          className="inputbox"
+                                          defaultValue={value?.price}
+                                          onChange={(e) =>
+                                            // setPrice(e.target.value)
+                                            setWeekPrice(e, index)
+                                          }
+                                        />
+                                      </span>
+                                    </div>
+                                  </>
+                                ))}
+                                {editprofiles?.includes(
+                                  val?.medicalCenter?._id
+                                ) ? (
+                                  <div className="ad-dse-apl">
+                                    <button
+                                      className="sdal-dlte"
+                                      onClick={(e) =>
+                                        editProfile(
+                                          e,
+                                          val.medicalCenter,
+                                          val?.scheduleList
+                                        )
+                                      }
+                                    >
+                                      {covert({ id: "Reset" })}
+                                    </button>
 
-                                              <input
-                                                type="date"
-                                                // value={ConvertDate(value?.enddate)}
-                                                value={value?.endDate}
-                                                onChange={(e) =>
-                                                  SetWeekEndDate(
-                                                    e,
-                                                    index,
-                                                    "endDate"
-                                                  )
-                                                }
-                                              />
-                                            </div>
-                                          </div>
-                                          <div>
-                                            {value?.scheduleId ? (
-                                              <span
-                                                className="dtl-icn-fun"
-                                                onClick={(e) =>
-                                                  DeleteScdule(e, value)
-                                                }
-                                              >
-                                                <AiFillDelete
-                                                  style={{
-                                                    color: "red",
-                                                    cursor: "pointer",
-                                                  }}
-                                                />
-                                              </span>
-                                            ) : (
-                                              <span
-                                                onClick={(e) =>
-                                                  DeleteRow(e, index)
-                                                }
-                                              >
-                                                <AiFillDelete
-                                                  style={{
-                                                    color: "red",
-                                                    cursor: "pointer",
-                                                    marginLeft: "10px",
-                                                  }}
-                                                />
-                                              </span>
-                                            )}
-                                          </div>
-                                        </>
-                                      ) : (
-                                        <div className="date-rng date-clr">
-                                          <label>Date Ranges</label>
-                                          <span>
-                                            <img
-                                              src={
-                                                "/assets/images/rnge-dae.svg"
-                                              }
-                                              alt="img"
-                                            />
-                                            {moment(value?.startDate).format(
-                                              "LL"
-                                            )}{" "}
-                                            -{" "}
-                                            {moment(value?.endDate).format(
-                                              "LL"
-                                            )}
-                                          </span>
-                                        </div>
-                                      )}
+                                    <p
+                                      onClick={(e) =>
+                                        SetNewWeekValue(e, val?.medicalCenter)
+                                      }
+                                      style={{ cursor: "pointer" }}
+                                    >
+                                      +{covert({ id: "Add More" })}
+                                    </p>
+                                    <button
+                                      className="sdal-aply"
+                                      onClick={(e) =>
+                                        UpdateScdehule(
+                                          e,
+                                          val?.scheduleList?.[0]?._id,
+                                          val?.medicalCenter?._id,
+                                          val?.medicalCenter
+                                        )
+                                      }
+                                    >
+                                      {covert({ id: "Apply" })}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  ""
+                                )}
+                              </>
+                            ) : (
+                              val?.scheduleList?.map((value, i) => (
+                                <div className="time-section">
+                                  <div className="mrng-time">
+                                    <div>
+                                      <p>
+                                        {" "}
+                                        {locale == "ar"
+                                          ? value?.timeSlot?.arabicName
+                                          : value?.timeSlot?.englishName}
+                                      </p>
+                                      <ul>
+                                        <li
+                                          className={
+                                            value?.monday ? "active" : ""
+                                          }
+                                        >
+                                          Mon
+                                        </li>
+                                        <li
+                                          className={
+                                            value?.tuesday ? "active" : ""
+                                          }
+                                        >
+                                          Tue
+                                        </li>
+                                        <li
+                                          className={
+                                            value?.wednesday ? "active" : ""
+                                          }
+                                        >
+                                          Wed
+                                        </li>
+                                        <li
+                                          className={
+                                            value?.thursday ? "active" : ""
+                                          }
+                                        >
+                                          Thu
+                                        </li>
+                                        <li
+                                          className={
+                                            value?.friday ? "active" : ""
+                                          }
+                                        >
+                                          Fri
+                                        </li>
+                                        <li
+                                          className={
+                                            value?.saturday ? "active" : ""
+                                          }
+                                        >
+                                          Sat
+                                        </li>
+                                        <li
+                                          className={
+                                            value?.sunday ? "active " : ""
+                                          }
+                                        >
+                                          Sun
+                                        </li>
+                                      </ul>
+
+                                      <div className="price">
+                                        <span>{covert({ id: "Price" })}: </span>
+                                        <span>
+                                          <input
+                                            type="text"
+                                            placeholder="20 Dinar"
+                                            className="inputbox1"
+                                            defaultValue={value?.price}
+                                            readOnly
+                                          />
+                                        </span>
+                                      </div>
+                                      {/* Tushar */}
+                                    </div>
+
+                                    <div className="date-rng date-clr">
+                                      <label>
+                                        {covert({ id: "Date Range" })}
+                                      </label>
+                                      <span>
+                                        <img
+                                          src={"/assets/images/rnge-dae.svg"}
+                                          alt="img"
+                                        />
+                                        {moment(value?.startDate).format("LL")}{" "}
+                                        - {moment(value?.endDate).format("LL")}
+                                      </span>
                                     </div>
                                   </div>
-                                </>
-                              ))}
-                              {editprofiles?.includes(
-                                val?.medicalCenterObject?._id
-                              ) ? (
-                                <div className="ad-dse-apl">
-                                  <button
-                                    className="sdal-dlte"
-                                    onClick={(e) =>
-                                      editProfile(
-                                        e,
-                                        val.medicalCenterObject,
-                                        val?.scheduleList
-                                      )
-                                    }
-                                  >
-                                    Reset
-                                  </button>
-
-                                  <p
-                                    onClick={(e) =>
-                                      SetNewWeekValue(
-                                        e,
-                                        val?.medicalCenterObject
-                                      )
-                                    }
-                                    style={{ cursor: "pointer" }}
-                                  >
-                                    +Add More
-                                  </p>
-                                  <button
-                                    className="sdal-aply"
-                                    onClick={(e) =>
-                                      UpdateScdehule(
-                                        e,
-                                        val?.scheduleList?.[0]?.scheduleId,
-                                        val?.medicalCenterObject?._id,
-                                        val?.medicalCenterObject
-                                      )
-                                    }
-                                  >
-                                    Apply
-                                  </button>
                                 </div>
-                              ) : (
-                                ""
-                              )}
-                            </>
-                          ) : (
-                            val?.scheduleList?.map((value, i) => (
-                              <div className="time-section">
-                                <div className="mrng-time">
-                                  <div>
-                                    <p>{value?.timeslot}</p>
-                                    <ul>
-                                      <li
-                                        className={
-                                          value?.monday ? "active" : ""
-                                        }
-                                      >
-                                        Mon
-                                      </li>
-                                      <li
-                                        className={
-                                          value?.tuesday ? "active" : ""
-                                        }
-                                      >
-                                        Tue
-                                      </li>
-                                      <li
-                                        className={
-                                          value?.wednesday ? "active" : ""
-                                        }
-                                      >
-                                        Wed
-                                      </li>
-                                      <li
-                                        className={
-                                          value?.thursday ? "active" : ""
-                                        }
-                                      >
-                                        Thu
-                                      </li>
-                                      <li
-                                        className={
-                                          value?.friday ? "active" : ""
-                                        }
-                                      >
-                                        Fri
-                                      </li>
-                                      <li
-                                        className={
-                                          value?.saturday ? "active" : ""
-                                        }
-                                      >
-                                        Sat
-                                      </li>
-                                      <li
-                                        className={
-                                          value?.sunday ? "active " : ""
-                                        }
-                                      >
-                                        Sun
-                                      </li>
-                                    </ul>
-                                  </div>
-                                  <div className="date-rng date-clr">
-                                    <label>Date Range</label>
-                                    <span>
-                                      <img
-                                        src={"/assets/images/rnge-dae.svg"}
-                                        alt="img"
-                                      />
-                                      {moment(value?.startDate).format("LL")} -{" "}
-                                      {moment(value?.endDate).format("LL")}
-                                    </span>
-                                  </div>
-                                </div>
-                                {/* <div className="mrng-time">
-                                <div>
-                                  <p>EVENING</p>
-                                  <ul>
-                                    <li className="active">Mon</li>
-                                    <li className="active">Tue</li>
-                                    <li>Wed</li>
-                                    <li>Thu</li>
-                                    <li className="active">Fri</li>
-                                    <li>Sat</li>
-                                    <li>Sun</li>
-                                  </ul>
-                                </div>
-                                <div className="date-rng date-clr">
-                                  <label>Date Range</label>
-                                  <span>
-                                    <img src={Rngedae} alt="img" /> 12 May, 2022
-                                    - 12 May, 2022
-                                  </span>
-                                </div>
-                              </div> */}
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      ))}
-                  </div>
+                              ))
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </Col>
               ) : (
                 <Col lg={4}>

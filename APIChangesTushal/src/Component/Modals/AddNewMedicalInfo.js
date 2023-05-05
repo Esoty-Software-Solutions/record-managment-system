@@ -3,10 +3,24 @@ import { Row, Col, Modal } from "react-bootstrap";
 
 import { RxCross1 } from "react-icons/rx";
 import { useDispatch, useSelector } from "react-redux";
-import { AddHelathreportData } from "../../redux/actions/action";
+import {
+  AddHelathreportAllergies,
+  AddHelathreportChronicDiseases,
+  AddHelathreportClinicalVisits,
+  AddHelathreportData,
+  AddHelathreportMedicalTests,
+  AddHelathreportSurgeryHistories,
+} from "../../redux/actions/action";
 import Swal from "sweetalert2";
+import { useIntl } from "react-intl";
+import { useRouter } from "next/router";
 function AddNewInfo(props) {
-  const { health_issue_family_res } = useSelector((state) => state.submitdata);
+  const { formatMessage: covert } = useIntl();
+  const { health_issue_family_res, add_health_issue_family_res } = useSelector(
+    (state) => state.submitdata
+  );
+
+  console.log("props", props);
 
   const [doctortype, setDoctorType] = useState("alergy");
 
@@ -19,12 +33,15 @@ function AddNewInfo(props) {
   const [imagePreview, setImagePreview] = useState("");
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
+  const [visitType, setVisitType] = useState("");
+  const [visitDate, setVisitDate] = useState("");
   const [notes, setNotes] = useState("");
   const [diagnosedByName, setDiagnosedBy] = useState("");
   const [diagnosedByDate, setDiagnosedDate] = useState("");
   const [date, setDate] = useState("");
   const [reportDate, setReportDate] = useState("");
   const [healthcenter, setHealthCenter] = useState("");
+  const [cityId, setCityId] = useState();
 
   const onChange = (e) => {
     setFile(e.target.files[0]);
@@ -32,13 +49,91 @@ function AddNewInfo(props) {
   };
   const handleSubmit = (e) => {
     e.preventDefault();
-    const formdata = new FormData();
-    formdata.append("file2", fileImage);
-    formdata.append("name", name);
-    formdata.append("title", title);
-    formdata.append("type", doctortype);
+    // props.setMedicalModal(false);
+    // dispatch(AddHelathreportData(formdata, props?.beni_id));
 
-    dispatch(AddHelathreportData(formdata, props?.beni_id));
+    if (doctortype == "alergy") {
+      const formdata = new FormData();
+      formdata.append("file", fileImage);
+      formdata.append("notes", notes);
+      formdata.append("title", title);
+
+      dispatch(
+        AddHelathreportAllergies(props?.beni_id, props.data._id, formdata)
+      );
+    }
+
+    if (doctortype == "chronic") {
+      const formdata = new FormData();
+      formdata.append("file", fileImage);
+      formdata.append("notes", notes);
+      formdata.append("diagnosisDate", diagnosedByDate);
+      formdata.append("doctorName", diagnosedByName);
+      formdata.append("title", title);
+      dispatch(
+        AddHelathreportChronicDiseases(props?.beni_id, props.data._id, formdata)
+      );
+    }
+
+    if (doctortype == "medicaltest") {
+      const formdata = new FormData();
+      formdata.append("file", fileImage);
+      formdata.append("notes", notes);
+      formdata.append("centerName", healthcenter);
+      formdata.append("cityId", cityId);
+      formdata.append("reportDate", reportDate);
+      formdata.append("title", title);
+      dispatch(
+        AddHelathreportMedicalTests(props?.beni_id, props.data._id, formdata)
+      );
+    }
+
+    if (doctortype == "surgeroy") {
+      const formdata = new FormData();
+      formdata.append("file", fileImage);
+      formdata.append("notes", notes);
+      formdata.append("centerName", healthcenter);
+
+      formdata.append("surgeryDate", date);
+      formdata.append("title", title);
+      dispatch(
+        AddHelathreportSurgeryHistories(
+          props?.beni_id,
+          props.data._id,
+          formdata
+        )
+      );
+    }
+
+    if (doctortype == "clinic") {
+      const formdata = new FormData();
+      formdata.append("file", fileImage);
+      formdata.append("notes", notes);
+      formdata.append("centerName", healthcenter);
+      formdata.append("doctorName", diagnosedByName);
+      formdata.append("visitDate", visitDate);
+      formdata.append("visitType", visitType);
+
+      dispatch(
+        AddHelathreportClinicalVisits(props?.beni_id, props.data._id, formdata)
+      );
+    }
+
+    setTimeout(() => {
+      setImagePreview("");
+      setName("");
+      setTitle("");
+      setNotes("");
+      setDiagnosedBy("");
+      setDiagnosedDate("");
+      setReportDate("");
+      setDate("");
+      setHealthCenter("");
+      setDoctorType("allergies");
+      setCityId("");
+      setVisitDate();
+      setVisitType();
+    }, 2000);
   };
 
   const DeleteImage = (e) => {
@@ -47,29 +142,69 @@ function AddNewInfo(props) {
     setImagePreview("");
   };
 
-  useEffect(() => {
-    if (health_issue_family_res) {
-      if (health_issue_family_res?.data?.codeStatus == "200") {
-        Swal.fire({
-          icon: "success",
-          text: health_issue_family_res?.data?.message,
-        });
+  // useEffect(() => {
+  //   if (health_issue_family_res) {
+  //     if (health_issue_family_res?.data?.codeStatus == "200") {
+  //       Swal.fire({
+  //         icon: "success",
+  //         text: health_issue_family_res?.data?.message,
+  //       });
 
-        props.setMedicalModal(false);
-        props.setAddMedicalDataForm(false);
-      } else if (
-        health_issue_family_res?.startsWith("beneficiaries validation faile")
-      ) {
-        Swal.fire({
-          icon: "error",
-          text: health_issue_family_res?.substr(0, 26),
-        });
-      }
-    }
-    return () => {
-      dispatch({ type: "ADD_HEALTH_ISSUE_FAMILY_MEMBER", payload: "" });
-    };
-  }, [health_issue_family_res]);
+  //       props.setMedicalModal(false);
+  //       props.setAddMedicalDataForm(false);
+
+  //       // setImagePreview("");
+  //       // setName("");
+  //       // setTitle("");
+  //       // setNotes("");
+  //       // setDiagnosedBy("");
+  //       // setDiagnosedDate("");
+  //       // setReportDate("");
+  //       // setDate("");
+  //       // setHealthCenter("");
+  //       // setDoctorType("");
+  //       // setCityId("");
+  //     } else if (
+  //       health_issue_family_res?.startsWith("beneficiaries validation faile")
+  //     ) {
+  //       Swal.fire({
+  //         icon: "error",
+  //         text: health_issue_family_res?.substr(0, 26),
+  //       });
+  //     }
+  //   }
+  //   return () => {
+  //     dispatch({ type: "ADD_HEALTH_ISSUE_FAMILY_MEMBER", payload: "" });
+  //   };
+  // }, [health_issue_family_res]);
+
+  // useEffect(() => {
+  //   if (add_health_issue_family_res) {
+  //     console.log("hello", add_health_issue_family_res?.data?.message);
+  //     if (add_health_issue_family_res?.data?.statusCode == "200") {
+  //       Swal.fire({
+  //         icon: "success",
+  //         text: add_health_issue_family_res?.data?.message,
+  //       });
+
+  //       props.setMedicalModal(false);
+  //       props.setAddMedicalDataForm(false);
+
+  //     } else if (
+  //       add_health_issue_family_res?.startsWith(
+  //         "beneficiaries validation faile"
+  //       )
+  //     ) {
+  //       Swal.fire({
+  //         icon: "error",
+  //         text: add_health_issue_family_res?.substr(0, 26),
+  //       });
+  //     }
+  //   }
+  //   return () => {
+  //     dispatch({ type: "ADD_HEALTH_ISSUE_FAMILY_MEMBER", payload: "" });
+  //   };
+  // }, [health_issue_family_res]);
 
   const DropDownChange = (e) => {
     e.preventDefault();
@@ -82,8 +217,12 @@ function AddNewInfo(props) {
     setDiagnosedDate("");
     setReportDate("");
     setDate("");
+    setVisitDate();
+    setVisitType();
     setHealthCenter("");
+    setCityId("");
   };
+  const { locale } = useRouter();
 
   return (
     <Modal
@@ -91,7 +230,9 @@ function AddNewInfo(props) {
       size="lg"
       aria-labelledby="contained-modal-title-vcenter"
       fullscreen={true}
-      className="beneficiaries-full"
+      className={
+        locale == "ar" ? "beneficiaries-full new-rtl" : "beneficiaries-full"
+      }
     >
       <Modal.Body className="full-modl-screen">
         <Row>
@@ -99,7 +240,7 @@ function AddNewInfo(props) {
           <Col md={6} className="add-mdicl-file">
             <>
               <Modal.Header closeButton className="mb-4">
-                <Modal.Title>Add Info</Modal.Title>
+                <Modal.Title>{covert({ id: "Add Info" })}</Modal.Title>
               </Modal.Header>
               <div className="add-denefi-markers">
                 <div className="add-form p-0">
@@ -107,7 +248,7 @@ function AddNewInfo(props) {
                     <Row>
                       <Col md={6}>
                         <div className="form-group">
-                          <label>Name</label>
+                          <label> {covert({ id: "name" })}</label>
                           <input
                             type="text"
                             name="name"
@@ -118,16 +259,26 @@ function AddNewInfo(props) {
                       </Col>
                       <Col md={6}>
                         <div className="form-group">
-                          <label>Doctor Type</label>
+                          <label>{covert({ id: "doctorType" })}</label>
                           <select onChange={DropDownChange} value={doctortype}>
                             <option value="" selected>
                               Types are:
                             </option>
-                            <option value="alergy">Allergies</option>
-                            <option value="chronic">Chronic Disease</option>
-                            <option value="medicaltest">Medical Test</option>
-                            <option value="surgeroy">Surgery History</option>
-                            <option value="clinic">Clinic Visit</option>
+                            <option value="alergy">
+                              {covert({ id: "Allergies" })}
+                            </option>
+                            <option value="chronic">
+                              {covert({ id: "Chronic Disease" })}
+                            </option>
+                            <option value="medicaltest">
+                              {covert({ id: "Medical Tests" })}
+                            </option>
+                            <option value="surgeroy">
+                              {covert({ id: "Surgery History" })}
+                            </option>
+                            <option value="clinic">
+                              {covert({ id: "Clinic Visit" })}
+                            </option>
                             {/* <option>Medical Tests</option> */}
                           </select>
                         </div>
@@ -148,7 +299,7 @@ function AddNewInfo(props) {
                           </Col>
                           <Col md={12}>
                             <div className="form-group">
-                              <label>Notes:</label>
+                              <label>{covert({ id: "Notes" })}:</label>
                               <textarea
                                 cols="5"
                                 value={notes}
@@ -170,17 +321,19 @@ function AddNewInfo(props) {
                         <>
                           <Col md={12}>
                             <div className="form-group">
-                              <label>Title :</label>
+                              <label>{covert({ id: "Title" })} :</label>
                               <input
                                 type="text"
                                 name="title"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
                                 // placeholder="Title"
                               />
                             </div>
                           </Col>
                           <Col md={6}>
                             <div className="form-group">
-                              <label>Diagonsed On :</label>
+                              <label>{covert({ id: "DiagnoesOn" })} :</label>
                               <input
                                 type="date"
                                 name="dates"
@@ -194,7 +347,7 @@ function AddNewInfo(props) {
                           </Col>
                           <Col md={6}>
                             <div className="form-group">
-                              <label>Diagonsed By :</label>
+                              <label>{covert({ id: "DiagnoesBy" })} :</label>
                               <input
                                 type="text"
                                 name="dateby"
@@ -206,7 +359,7 @@ function AddNewInfo(props) {
                           </Col>
                           <Col md={12}>
                             <div className="form-group">
-                              <label>Notes:</label>
+                              <label>{covert({ id: "Notes" })}:</label>
                               <textarea
                                 cols="5"
                                 value={notes}
@@ -228,7 +381,7 @@ function AddNewInfo(props) {
                         <>
                           <Col md={12}>
                             <div className="form-group">
-                              <label>Title :</label>
+                              <label>{covert({ id: "Title" })} :</label>
                               <input
                                 type="text"
                                 name="title"
@@ -240,7 +393,46 @@ function AddNewInfo(props) {
                           </Col>
                           <Col md={6}>
                             <div className="form-group">
-                              <label>Report Date :</label>
+                              <label>{covert({ id: "CenterName" })} :</label>
+                              <input
+                                type="text"
+                                name="center"
+                                // placeholder="Title"
+
+                                value={healthcenter}
+                                onChange={(e) =>
+                                  setHealthCenter(e.target.value)
+                                }
+                              />
+                            </div>
+                          </Col>
+                          <Col md={6}>
+                            <div className="form-group">
+                              <label>{covert({ id: "City" })} :</label>
+                              <select
+                                name="cityId"
+                                value={cityId}
+                                onChange={(e) => setCityId(e.target.value)}
+                              >
+                                <option value={""} disabled selected>
+                                  {covert({ id: "Select City" })}
+                                </option>
+
+                                {props.cityList &&
+                                  props.cityList?.map((v, ia) => (
+                                    <option key={ia} value={v?._id}>
+                                      {locale == "ar"
+                                        ? v?.arabicName
+                                        : v?.englishName}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+                          </Col>
+
+                          <Col md={6}>
+                            <div className="form-group">
+                              <label>{covert({ id: "Report Date" })} :</label>
                               <input
                                 type="date"
                                 name="title"
@@ -252,6 +444,16 @@ function AddNewInfo(props) {
                             </div>
                           </Col>
 
+                          <Col md={12}>
+                            <div className="form-group">
+                              <label>{covert({ id: "Notes" })}:</label>
+                              <textarea
+                                cols="5"
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                              ></textarea>
+                            </div>
+                          </Col>
                           {/* <Col md={12}>
                             <div className="form-group">
                               <label>Upload File</label>
@@ -266,23 +468,23 @@ function AddNewInfo(props) {
                         <>
                           <Col md={6}>
                             <div className="form-group">
-                              <label>Title :</label>
+                              <label>{covert({ id: "Visit Type" })} :</label>
                               <input
                                 type="text"
-                                name="title"
+                                name="visit"
                                 // placeholder="Title"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
+                                value={visitType}
+                                onChange={(e) => setVisitType(e.target.value)}
                               />
                             </div>
                           </Col>
 
                           <Col md={6}>
                             <div className="form-group">
-                              <label>Health Center :</label>
+                              <label>{covert({ id: "Health Center" })} :</label>
                               <input
                                 type="text"
-                                name="title"
+                                name="center"
                                 // placeholder="Title"
 
                                 value={healthcenter}
@@ -294,18 +496,18 @@ function AddNewInfo(props) {
                           </Col>
                           <Col md={6}>
                             <div className="form-group">
-                              <label>Date :</label>
+                              <label>{covert({ id: "Date" })} :</label>
                               <input
                                 type="date"
-                                name="title"
-                                value={date}
-                                onChange={(e) => setDate(e.target.value)}
+                                name="date"
+                                value={visitDate}
+                                onChange={(e) => setVisitDate(e.target.value)}
                               />
                             </div>
                           </Col>
                           <Col md={6}>
                             <div className="form-group">
-                              <label>Doctor :</label>
+                              <label>{covert({ id: "Doctor" })} :</label>
                               <input
                                 type="text"
                                 name="title"
@@ -317,7 +519,7 @@ function AddNewInfo(props) {
                           </Col>
                           <Col md={12}>
                             <div className="form-group">
-                              <label>Notes:</label>
+                              <label>{covert({ id: "Notes" })}:</label>
                               <textarea
                                 cols="5"
                                 value={notes}
@@ -340,10 +542,12 @@ function AddNewInfo(props) {
                         <>
                           <Col md={6}>
                             <div className="form-group">
-                              <label>Title :</label>
+                              <label>{covert({ id: "Title" })} :</label>
                               <input
                                 type="text"
                                 name="title"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
                                 // placeholder="Title"
                               />
                             </div>
@@ -351,9 +555,13 @@ function AddNewInfo(props) {
 
                           <Col md={6}>
                             <div className="form-group">
-                              <label>Health Center :</label>
+                              <label>{covert({ id: "Health Center" })} :</label>
                               <input
                                 type="text"
+                                value={healthcenter}
+                                onChange={(e) =>
+                                  setHealthCenter(e.target.value)
+                                }
                                 name="title"
                                 // placeholder="Title"
                               />
@@ -361,28 +569,36 @@ function AddNewInfo(props) {
                           </Col>
                           <Col md={6}>
                             <div className="form-group">
-                              <label>Date :</label>
+                              <label>{covert({ id: "Date" })} :</label>
                               <input
                                 type="date"
                                 name="title"
                                 // placeholder="Title"
+                                value={date}
+                                onChange={(e) => setDate(e.target.value)}
                               />
                             </div>
                           </Col>
                           <Col md={6}>
                             <div className="form-group">
-                              <label>Doctor :</label>
+                              <label>{covert({ id: "Doctor" })} :</label>
                               <input
                                 type="text"
                                 name="title"
+                                value={diagnosedByName}
+                                onChange={(e) => setDiagnosedBy(e.target.value)}
                                 // placeholder="Title"
                               />
                             </div>
                           </Col>
                           <Col md={12}>
                             <div className="form-group">
-                              <label>Notes:</label>
-                              <textarea cols="5"></textarea>
+                              <label>{covert({ id: "Notes" })}:</label>
+                              <textarea
+                                cols="5"
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                              ></textarea>
                             </div>
                           </Col>
 
@@ -402,7 +618,7 @@ function AddNewInfo(props) {
 
                       <Col md={12}>
                         <div className="form-group">
-                          <label>Upload File</label>
+                          <label>{covert({ id: "upload" })}</label>
                           <div className="uplfle">
                             <input type="file" onChange={onChange} />
                             <img
@@ -439,7 +655,7 @@ function AddNewInfo(props) {
                       onClick={() => props.onHide()}
                       className="cls-btn-btn"
                     >
-                      Cancel
+                      {covert({ id: "Cancel" })}
                     </button>
                     <button
                       className="add-fmy-btn"
@@ -447,7 +663,7 @@ function AddNewInfo(props) {
                       onClick={handleSubmit}
                       form="form-data"
                     >
-                      Submit
+                      {covert({ id: "Submit" })}
                     </button>
                   </div>
                 ) : (

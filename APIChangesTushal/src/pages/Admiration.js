@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import {
   Col,
@@ -14,21 +14,31 @@ import {
 
 import { useDispatch, useSelector } from "react-redux";
 import {
+  BenefeciaryList,
+  DoctorList,
   GetAdmistratotUserList,
+  GetInstitutionList,
+  GetRoleList,
   GetUserInfo,
   PostUserInfo,
   UpdateUserDetail,
 } from "../redux/actions/action";
+import Select from "react-select";
 import _ from "lodash";
 import Swal from "sweetalert2";
 import { Formik } from "formik";
 import { AiFillEdit } from "react-icons/ai";
 import UserEditModal from "@/Component/Modals/UserEditModal";
+import { useIntl } from "react-intl";
+import ChangePassword from "@/Component/Modals/ChangePasswordModal";
+import { useRouter } from "next/router";
 function Admiration() {
   const dispatch = useDispatch();
 
   const [userInformation, setUserInfoForDetails] = useState([]);
+  const [useridforpasswordchange, setUserID] = useState();
   const [userEdit, setUserEditModal] = useState(false);
+  const [passwordmodal, setPasswordModal] = useState(false);
   const [hideDiv, setHideDiv] = useState(false);
   const [hideDiv1, setHideDiv1] = useState(false);
   const [key, setKey] = useState("home");
@@ -41,44 +51,38 @@ function Admiration() {
   const [userlist, setUserList] = useState([]);
   const [rolelist, setRole] = useState([]);
   const [userinfo, setUserInfo] = useState();
+  const [benefList, setBeneList] = useState();
   const [count, setObjectCount] = useState();
+  const [docList, setDoctorList] = useState();
+  // for dropdown react select
+  const [docListOption, setDoctorOption] = useState([]);
+  const [institutionList, setInstitutionList] = useState([]);
+  const [roleList, setRoleList] = useState([]);
+  const [InstitutionListOption, setInstitutionOption] = useState([]);
+  const [benefOption, setBeneOptions] = useState([]);
+  const [doctorId, setDoctorId] = useState(null);
+  const [instituionId, setInstitutionId] = useState(null);
+  const [benfId, setBenefId] = useState(null);
+  const [datasetinstate, setDatainState] = useState(false);
+  const [otherstate, setotherState] = useState(false);
 
-  let data = [
-    {
-      id: "1",
-      role: "general",
-    },
-    {
-      id: "2",
-      role: "doctor",
-    },
-    {
-      id: "3",
-      role: "nurse",
-    },
-    {
-      id: "3",
-      role: "pateint",
-    },
-    {
-      id: "4",
-      role: "Clerk",
-    },
-    {
-      id: "5",
-      role: "medical-staff",
-    },
-  ];
+  // for single user 1st tab state for react select
+  const [userdoctorId, UsersetDoctorId] = useState(null);
+  const [userinstituionId, UsersetInstitutionId] = useState(null);
+  const [userbenfId, UsersetBenefId] = useState(null);
+
   useEffect(() => {
     if (key == "user") {
       if (stopapi === false) {
         setLoader(true);
-        dispatch(GetAdmistratotUserList(skip, limit));
+        // dispatch(GetAdmistratotUserList(skip, limit));
+        APICall();
       }
     }
     if (key == "home") {
       dispatch(GetUserInfo());
     }
+
     return () => {
       dispatch({ type: "GET_USER_ADMIS_LIST", payload: "" });
       dispatch({ type: "GET_USER_INFORMATION", payload: "" });
@@ -86,13 +90,47 @@ function Admiration() {
     };
   }, [key, skip]);
 
-  const { admist_usr_list, get_user_information } = useSelector(
-    (state) => state.fetchdata
+  const APICall = (value) => {
+    if (stopapi == false) {
+      dispatch(GetAdmistratotUserList(skip, limit, value));
+    } else {
+      setLoader(false);
+    }
+  };
+
+  const debounce = (func) => {
+    let timer;
+    return function (...args) {
+      const context = this;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        func.apply(context, args);
+      }, 500);
+    };
+  };
+
+  const optimizedFn = useCallback(
+    debounce((valu) => {
+      setLoader(true);
+      APICall(valu);
+      setUserList([]);
+      setObjectCount(0);
+    }),
+    []
   );
 
-  const { add_admist_user_res, update_user_res } = useSelector(
-    (state) => state.submitdata
-  );
+  const {
+    admist_usr_list,
+    get_user_information,
+    benef_list,
+    get_doctor_list,
+    institution_list,
+    get_role_list,
+  } = useSelector((state) => state.fetchdata);
+
+  const { add_admist_user_res, update_user_res, change_password_res } =
+    useSelector((state) => state.submitdata);
 
   useEffect(() => {
     if (admist_usr_list) {
@@ -144,6 +182,8 @@ function Admiration() {
     if (get_user_information) {
       if (get_user_information?.data?.statusCode == "200") {
         setUserInfo(get_user_information?.data?.data);
+        setDatainState(true);
+        setotherState(true);
       } else {
         Swal.fire({
           icon: "error",
@@ -175,7 +215,6 @@ function Admiration() {
   // }, [key]);
 
   const AddUser = (values, { resetForm }) => {
-    // console.log("Sss", values);
     dispatch(PostUserInfo(values));
     resetForm();
   };
@@ -223,28 +262,71 @@ function Admiration() {
   };
 
   useEffect(() => {
-    // console.log("data", count, benef_lists?.length)
-
-    // if (count == data?.length) {
-    //   setStopAPi(true);
-    //   setLoadMoreAlwways(false)
-    // }
-    // if (data_res?.data?.data?.objectCount >= data?.length) {
-    // if (count > data?.length ) {
-    //   setStopAPi(false);
-    //   setLoadMoreAlwways(true)
-    // }
-    // if (count > data?.length) {
-    //   setStopAPi(false);
-    // }
-
-    if (count <= skip + limit) {
+    if (stopapi == undefined) {
+      setTotalData(true);
+      setLoader(false);
+    } else if (count <= skip + limit) {
       setStopAPi(true);
       // setLoadMoreAlwways(false)
     } else {
       setStopAPi(false);
     }
   }, [count, userlist]);
+
+  useEffect(() => {
+    if (update_user_res) {
+      if (update_user_res?.data?.statusCode == "200") {
+        Swal.fire({
+          text: update_user_res?.data?.message,
+          timer: 2000,
+          icon: "success",
+        });
+        if (key == "user") {
+          setSkip(0);
+          // dispatch(GetAdmistratotUserList(0, 10));
+        } else {
+          dispatch(GetUserInfo());
+        }
+
+        setUserEditModal(false);
+      } else {
+        Swal.fire({
+          icon: "error",
+          text: update_user_res,
+          timer: 2000,
+        });
+        setUserEditModal(false);
+      }
+    }
+    return () => {
+      dispatch({ type: "UPDATE_USER_DETAILS", payload: "" });
+    };
+  }, [update_user_res]);
+
+  useEffect(() => {
+    if (change_password_res) {
+      if (change_password_res?.data?.statusCode == "200") {
+        Swal.fire({
+          text: change_password_res?.data?.message,
+          timer: 2000,
+          icon: "success",
+        });
+        setPasswordModal(false);
+        setUserID();
+      } else {
+        Swal.fire({
+          icon: "error",
+          text: change_password_res?.message,
+          timer: 2000,
+        });
+        setPasswordModal(false);
+        setUserID();
+      }
+    }
+    return () => {
+      dispatch({ type: "CHANGE_PASSWORD_API", payload: "" });
+    };
+  }, [change_password_res]);
 
   useEffect(() => {
     if (update_user_res) {
@@ -275,24 +357,260 @@ function Admiration() {
     };
   }, [update_user_res]);
 
+  useEffect(() => {
+    if (key == "home") {
+      dispatch(DoctorList(0, 500));
+      dispatch(BenefeciaryList(500, 0));
+      dispatch(GetInstitutionList());
+      dispatch(GetRoleList());
+    }
+  }, []);
+
+  useEffect(() => {
+    if (benef_list) {
+      if (benef_list?.data?.statusCode == "200") {
+        setBeneList(benef_list?.data?.data?.objectArray);
+        if (benef_list?.data?.data?.objectArray) {
+          benef_list?.data?.data?.objectArray?.map((val, i) => {
+            return setBeneOptions((pre) => [
+              ...pre,
+              { value: val._id, label: val.firstName },
+            ]);
+          });
+        }
+      } else {
+        Swal.fire({
+          icon: "error",
+          text: "Something Went Wrong",
+        });
+      }
+    }
+    return () => {
+      dispatch({ type: "GET_BENE_LIST", payload: "" });
+    };
+  }, [benef_list]);
+
+  useEffect(() => {
+    if (get_role_list) {
+      if (get_role_list?.data?.statusCode == "200") {
+        setRoleList(get_role_list?.data?.data?.objectArray);
+      } else {
+        Swal.fire({
+          icon: "error",
+          text: "Something Went Wrong",
+        });
+      }
+    }
+    return () => {
+      dispatch({ type: "GET_ROLE_LIST", payload: "" });
+    };
+  }, [get_role_list]);
+
+  useEffect(() => {
+    if (get_doctor_list) {
+      // console.log("sss", get_doctor_list?.data);
+      if (get_doctor_list?.data?.statusCode == "200") {
+        setDoctorList(get_doctor_list?.data?.data?.objectArray);
+        if (get_doctor_list?.data?.data?.objectArray) {
+          get_doctor_list?.data?.data?.objectArray?.map((val, i) => {
+            return setDoctorOption((pre) => [
+              ...pre,
+              { value: val._id, label: val.firstName + " " + val.lastName },
+            ]);
+          });
+        }
+      } else {
+        Swal.fire({
+          icon: "error",
+          text: "Something Went Wrong",
+        });
+      }
+    }
+
+    return () => {
+      dispatch({ type: "GET_DOCTOR_LIST", payload: "" });
+    };
+  }, [get_doctor_list]);
+
+  useEffect(() => {
+    if (institution_list) {
+      if (institution_list?.data?.statusCode == "200") {
+        setInstitutionList(institution_list?.data?.data?.objectArray);
+        if (institution_list?.data?.data?.objectArray) {
+          institution_list?.data?.data?.objectArray?.map((val, i) => {
+            return setInstitutionOption((pre) => [
+              ...pre,
+              { value: val._id, label: val.name },
+            ]);
+          });
+        }
+      } else {
+        Swal.fire({
+          icon: "error",
+          text: "Something Went Wrong",
+        });
+      }
+    }
+    return () => {
+      dispatch({ type: "GET_INSTITUTION_LIST", payload: "" });
+    };
+  }, [institution_list]);
+
   const UpdateDetails = (values) => {
     let subscriberId = localStorage.getItem("Zept_UserId");
-    dispatch(UpdateUserDetail(subscriberId, values));
+    const data = {
+      ImagingCenterId: values?.ImagingCenterId ? values?.ImagingCenterId : "",
+      auxiliaryCenterId: values?.auxiliaryCenterId
+        ? values?.auxiliaryCenterId
+        : null,
+      lastName: values?.lastName ? values?.lastName : "",
+      phoneNumber: values?.phoneNumber ? values?.phoneNumber : "",
+      email: values?.email ? values?.email : null,
+      // doctorId: userdoctorId?.value ? userdoctorId?.value : null,
+      // institutionId: userinstituionId.value ? userinstituionId.value : null,
+      // subscriberId: userbenfId.value ? userbenfId.value : null,
+      subscriberId: values?.subscriberId ? values?.subscriberId : null,
+      doctorId: values?.doctorId ? values?.doctorId : null,
+      institutionId: values.institutionId ? values.institutionId : null,
+      laboratoryId: values?.laboratoryId ? values?.laboratoryId : null,
+      pharmacyId: values?.pharmacyId ? values?.pharmacyId : null,
+      firstName: values?.firstName ? values?.firstName : "",
+      secondName: values?.secondName ? values?.secondName : "",
+      thirdName: values?.thirdName ? values?.thirdName : "",
+      username: values?.username ? values?.username : "",
+    };
+
+    dispatch(UpdateUserDetail(subscriberId, data));
   };
+  const { formatMessage: covert } = useIntl();
+
+  // useEffect(() => {
+  // if (docList) {
+  //   docList?.map((val, i) => {
+  //     return setDoctorOption((pre) => [
+  //       ...pre,
+  //       { value: val._id, label: val.firstName + " " + val.lastName },
+  //     ]);
+  //   });
+  // }
+  //   if (benefList) {
+  //     benefList?.map((val, i) => {
+  //       return setBeneOptions((pre) => [
+  //         ...pre,
+  //         { value: val._id, label: val.firstName },
+  //       ]);
+  //     });
+  //   }
+  //   if (institutionList) {
+  //     institutionList?.map((val, i) => {
+  //       return setInstitutionOption((pre) => [
+  //         ...pre,
+  //         { value: val._id, label: val.name },
+  //       ]);
+  //     });
+  //   }
+  // }, [docList, benefList, institutionList]);
+
+  useEffect(() => {
+    if (datasetinstate) {
+      callFuntion();
+    }
+  }, [
+    datasetinstate,
+    editinput,
+    userinfo,
+    institutionList,
+    docList,
+    benefList,
+  ]);
+
+  const callFuntion = () => {
+    let findinstitutionvalue = institutionList?.filter((val) => {
+      return val._id == userinfo?.institutionId;
+    });
+
+    let findoctorvalue = docList?.filter((val) => {
+      return val._id == userinfo?.doctorId;
+    });
+
+    let findsubsvalue = benefList?.filter((val) => {
+      return val._id == userinfo?.subscriberId;
+    });
+
+    // console.log("findsubsvalue",findsubsvalue);
+
+    if (findoctorvalue?.[0]?._id) {
+      UsersetDoctorId({
+        value: findoctorvalue[0]?._id,
+        label: findoctorvalue[0]?.firstName,
+      });
+    }
+
+    if (findinstitutionvalue?.[0]?._id) {
+      UsersetInstitutionId({
+        value: findinstitutionvalue[0]?._id,
+        label: findinstitutionvalue[0]?.name,
+      });
+    }
+    if (findsubsvalue?.[0]?._id) {
+      UsersetBenefId({
+        value: findsubsvalue[0]?._id,
+        label: findsubsvalue[0]?.firstName,
+      });
+    }
+  };
+
+  const { locale } = useRouter();
 
   return (
     <div>
       <div className="main-content">
         <div className="tbs-bot">
+          {key == "user" && (
+            <Row>
+              <Col md={4}>
+                <div className="filter-chek mt-4">
+                  <div className="srch-text">
+                    <input
+                      type="text"
+                      placeholder={covert({ id: "Search" })}
+                      onChange={(e) => {
+                        // setLoader(true);
+                        // SetsearchQuery(e.target.value);
+                        optimizedFn(e.target.value);
+                      }}
+                    />
+                    <img src={"/assets/images/srch-1.svg"} alt="img" />
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          )}
           <Tabs
             defaultActiveKey="home"
             transition={false}
             activeKey={key}
-            onSelect={(k) => setKey(k)}
+            onSelect={(k) => {
+              setKey(k);
+              setDatainState(false);
+              // setDoctorOption([]);
+              // setDoctorList([]);
+              // setInstitutionOption([]);
+              // setInstitutionList([]);
+              // setBeneList([]);
+              // setBeneOptions([]);
+              setInstitutionId(null);
+              setBenefId(null);
+              setDoctorId(null);
+
+              UsersetBenefId(null);
+              UsersetDoctorId(null);
+              UsersetInstitutionId(null);
+            }}
             id="noanim-tab-example"
             className="admintration-tbs"
           >
-            <Tab eventKey="home" title="Profile">
+            <Tab eventKey="home" title={covert({ id: "Profile" })}>
               <div className="admintration-tbs-dtl">
                 <Formik
                   initialValues={{
@@ -318,6 +636,18 @@ function Admiration() {
                     auxiliaryCenterId: userinfo?.auxiliaryCenterId
                       ? userinfo?.auxiliaryCenterId
                       : null,
+
+                    pharmacyId: userinfo?.pharmacyId
+                      ? userinfo?.pharmacyId
+                      : "",
+                    laboratoryId: userinfo?.laboratoryId
+                      ? userinfo?.laboratoryId
+                      : null,
+
+                    ImagingCenterId: userinfo?.ImagingCenterId
+                      ? userinfo?.ImagingCenterId
+                      : null,
+                    role: userinfo?.role ? userinfo?.role : null,
                   }}
                   onSubmit={UpdateDetails}
                   // validationSchema={DoctorForm}
@@ -333,206 +663,15 @@ function Admiration() {
                     isSubmitting,
                     /* and other goodies */
                   }) => (
-                    // <form className="inpt-fld" onSubmit={handleSubmit}>
-                    //   <div className="prt-fmr">
-                    //     <Row>
-                    //       <Col md={4}>
-                    //         <div className="form-group">
-                    //           <label>User Name</label>
-                    //           <input
-                    //             type="text"
-                    //             name="username"
-                    //             placeholder="username123"
-                    //             value={values.username}
-                    //             onChange={handleChange}
-                    //             onBlur={handleBlur}
-                    //           />
-                    //         </div>
-                    //       </Col>
-                    //       <Col md={4}>
-                    //         <div className="form-group">
-                    //           <label>First Name</label>
-                    //           <input
-                    //             type="text"
-                    //             placeholder="Firstname"
-                    //             name="firstname"
-                    //             value={values.firstname}
-                    //             onChange={handleChange}
-                    //             onBlur={handleBlur}
-                    //           />
-                    //         </div>
-                    //       </Col>
-                    //       <Col md={4}>
-                    //         <div className="form-group">
-                    //           <label>Second Name</label>
-                    //           <input
-                    //             type="text"
-                    //             placeholder="Secondname"
-                    //             name="secondName"
-                    //             value={values.secondName}
-                    //             onChange={handleChange}
-                    //             onBlur={handleBlur}
-                    //           />
-                    //         </div>
-                    //       </Col>
-                    //       <Col md={4}>
-                    //         <div className="form-group">
-                    //           <label>Third Name</label>
-                    //           <input
-                    //             type="text"
-                    //             placeholder="Thirdname"
-                    //             name="thirdName"
-                    //             value={values.thirdName}
-                    //             onChange={handleChange}
-                    //             onBlur={handleBlur}
-                    //           />
-                    //         </div>
-                    //       </Col>
-                    //       <Col md={4}>
-                    //         <div className="form-group">
-                    //           <label>Last Name</label>
-                    //           <input
-                    //             type="text"
-                    //             placeholder="Lastname"
-                    //             name="lastname"
-                    //             value={values.lastname}
-                    //             onChange={handleChange}
-                    //             onBlur={handleBlur}
-                    //           />
-                    //         </div>
-                    //       </Col>
-                    //       <Col md={4}>
-                    //         <div className="form-group">
-                    //           <label>User Role</label>
-                    //           <input type="text" placeholder="Doctor" />
-                    //         </div>
-                    //       </Col>
-                    //       <Col md={4}>
-                    //         <div className="form-group">
-                    //           <label>Organization</label>
-                    //           <input type="text" placeholder="Alvin Hospital" />
-                    //         </div>
-                    //       </Col>
-                    //       <Col md={4}>
-                    //         <div className="form-group">
-                    //           <label>Benefeciary Id</label>
-                    //           <input
-                    //             type="text"
-                    //             placeholder="Benefeciary Id"
-                    //             name="beneid"
-                    //             value={values.beneid}
-                    //             onChange={handleChange}
-                    //             onBlur={handleBlur}
-                    //           />
-                    //         </div>
-                    //       </Col>
-                    //       <Col md={4}>
-                    //         <div className="form-group">
-                    //           <label>Doctor Id</label>
-                    //           <input
-                    //             type="text"
-                    //             name="doctor_id"
-                    //             placeholder="Doctor Id"
-                    //             // value={userinfo?.DoctorId}
-                    //             value={values.doctor_id}
-                    //             onChange={handleChange}
-                    //             onBlur={handleBlur}
-                    //           />
-                    //         </div>
-                    //       </Col>
-                    //       <Col md={4}>
-                    //         <div className="form-group">
-                    //           <label>Phone Number</label>
-                    //           <input
-                    //             type="text"
-                    //             placeholder="1235-452-567"
-                    //             name="phone"
-                    //             value={values.phone}
-                    //             onChange={handleChange}
-                    //             onBlur={handleBlur}
-                    //           />
-                    //         </div>
-                    //       </Col>
-                    //       <Col md={4}>
-                    //         <div className="form-group">
-                    //           <label>Email</label>
-                    //           <input
-                    //             type="text"
-                    //             placeholder="example@gmail.com"
-                    //             name="email"
-                    //             value={values.email}
-                    //             onChange={handleChange}
-                    //             onBlur={handleBlur}
-                    //           />
-                    //         </div>
-                    //       </Col>
-                    //       <Col md={4}>
-                    //         <div className="prt-fmr">
-                    //           <div className="orgn-tags edt-tags">
-                    //             {rolelist &&
-                    //               rolelist?.map((val, is) => (
-                    //                 <label className="multipal-slt" key={is}>
-                    //                   {val}{" "}
-                    //                   <img
-                    //                     className="img-fluid mt-4"
-                    //                     src={"/assets/images/sl-close.svg"}
-                    //                     alt="img"
-                    //                     onClick={(e) => removeRole(e, val)}
-                    //                   />
-                    //                 </label>
-                    //               ))}
-                    //             <img
-                    //               src={"/assets/images/more-add.svg"}
-                    //               alt="img"
-                    //               onClick={() => setHideDiv(true)}
-                    //             />
-                    //             {!hideDiv ? (
-                    //               ""
-                    //             ) : (
-                    //               <div className="tag-inpt">
-                    //                 <select onChange={(e) => setRoles(e)}>
-                    //                   <option value="" selected>
-                    //                     --Select Role--
-                    //                   </option>
-                    //                   {data &&
-                    //                     data?.map((val, ind) => (
-                    //                       <option
-                    //                         value={val.role}
-                    //                         disabled={rolelist?.includes(
-                    //                           val?.role
-                    //                         )}
-                    //                       >
-                    //                         {val?.role}
-                    //                       </option>
-                    //                     ))}
-                    //                 </select>
-                    //               </div>
-                    //             )}
-                    //           </div>
-                    //         </div>
-                    //       </Col>
-
-                    //       <Col md={4}>
-                    //         <div className="re-edit-pss benfits-btn mt-4">
-                    //           <button>Discard </button>
-                    //           <button className="clr-btn" type="submit">
-                    //             Submit
-                    //           </button>
-                    //         </div>
-                    //       </Col>
-                    //     </Row>
-                    //   </div>
-                    // </form>
-
                     <form className="inpt-fld" onSubmit={handleSubmit}>
                       <div className="prt-fmr">
                         <Row>
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>User Name</label>
+                              <label>{covert({ id: "username" })}</label>
                               <input
                                 readOnly={editinput}
-                                placeholder="username123"
+                                placeholder={covert({ id: "username" })}
                                 name="username"
                                 value={values.username}
                                 onChange={handleChange}
@@ -542,10 +681,10 @@ function Admiration() {
                           </Col>
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>First Name</label>
+                              <label>{covert({ id: "fname" })}</label>
                               <input
                                 readOnly={editinput}
-                                placeholder="firstName"
+                                placeholder={covert({ id: "fname" })}
                                 name="firstName"
                                 value={values.firstName}
                                 onChange={handleChange}
@@ -555,10 +694,10 @@ function Admiration() {
                           </Col>
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Second Name</label>
+                              <label> {covert({ id: "secondname" })}</label>
                               <input
                                 readOnly={editinput}
-                                placeholder="Secondname"
+                                placeholder={covert({ id: "secondname" })}
                                 name="secondName"
                                 value={values.secondName}
                                 onChange={handleChange}
@@ -568,10 +707,10 @@ function Admiration() {
                           </Col>
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Third Name</label>
+                              <label>{covert({ id: "thirdname" })}</label>
                               <input
                                 readOnly={editinput}
-                                placeholder="Thirdname"
+                                placeholder={covert({ id: "thirdname" })}
                                 name="thirdName"
                                 value={values.thirdName}
                                 onChange={handleChange}
@@ -581,10 +720,10 @@ function Admiration() {
                           </Col>
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Last Name</label>
+                              <label>{covert({ id: "lname" })}</label>
                               <input
                                 readOnly={editinput}
-                                placeholder="Lastname"
+                                placeholder={covert({ id: "lname" })}
                                 name="lastName"
                                 value={values.lastName}
                                 onChange={handleChange}
@@ -592,23 +731,56 @@ function Admiration() {
                               />
                             </div>
                           </Col>
-                          {/* <Col lg={4} md={6}>
-                            <div className="form-group">
-                              <label>User Role</label>
-                              <input
-                                readOnly={editinput}
-                                placeholder="Doctor"
-                                value={userinfo?.doctorId}
-                              />
-                            </div>
-                          </Col> */}
+
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Instituion Id</label>
+                              <label>{covert({ id: "InstitutionId" })}</label>
+
                               <input
                                 name="instituionId"
                                 readOnly={editinput}
+                                placeholder={covert({ id: "InstitutionId" })}
                                 value={values.instituionId}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                              />
+                              {/* {editinput ? (
+                                <input
+                                  name="instituionId"
+                                  readOnly={true}
+                                  value={userinstituionId?.label}
+                                  // placeholder={userinstituionId?.label}
+                                  // value={values.instituionId}
+                                  // onChange={handleChange}
+                                  // onBlur={handleBlur}
+                                />
+                              ) : (
+                                <Select
+                                  placeholder={covert({ id: "InstitutionId" })}
+                                  name="instituionId"
+                                  value={userinstituionId}
+                                  onChange={(value) => {
+                                    UsersetInstitutionId(value);
+                                    values.instituionId = value.value;
+                                  }}
+                                  onBlur={handleBlur}
+                                  isSearchable={true}
+                                  options={InstitutionListOption}
+                                  isLoading={false}
+                                  loadingMessage={() => "Fetching Data"}
+                                  noOptionsMessage={() => "Institution List"}
+                                />
+                              )} */}
+                            </div>
+                          </Col>
+
+                          <Col lg={4} md={6}>
+                            <div className="form-group">
+                              <label>{covert({ id: "Pharmacy Id" })}</label>
+                              <input
+                                placeholder={covert({ id: "Pharmacy Id" })}
+                                name="pharmacyId"
+                                value={values.pharmacyId}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                               />
@@ -617,36 +789,108 @@ function Admiration() {
 
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Subscriber Id</label>
+                              <label>{covert({ id: "laboratory Id" })}</label>
+                              <input
+                                placeholder={covert({ id: "laboratory Id" })}
+                                name="laboratoryId"
+                                value={values.laboratoryId}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                              />
+                            </div>
+                          </Col>
+
+                          <Col lg={4} md={6}>
+                            <div className="form-group">
+                              <label>{covert({ id: "SubscribweId" })}</label>
+
                               <input
                                 type="text"
-                                placeholder="Subscriber Id"
+                                placeholder={covert({ id: "SubscribweId" })}
                                 name="subscriberId"
                                 readOnly={editinput}
                                 value={values.subscriberId}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                               />
+                              {/* {editinput ? (
+                                <input
+                                  type="text"
+                                  // placeholder={userbenfId?.label}
+                                  value={userbenfId?.label}
+                                  name="subscriberId"
+                                  readOnly={true}
+                                  // value={values.subscriberId}
+                                  // onChange={handleChange}
+                                  // onBlur={handleBlur}
+                                />
+                              ) : (
+                                <Select
+                                  placeholder={covert({ id: "SubscribweId" })}
+                                  name="subscriberId"
+                                  value={userbenfId}
+                                  onChange={(value) => {
+                                    UsersetBenefId(value);
+                                    values.subscriberId = value.value;
+                                  }}
+                                  onBlur={handleBlur}
+                                  isSearchable={true}
+                                  options={benefOption}
+                                  isLoading={false}
+                                  loadingMessage={() => "Fetching Data"}
+                                  noOptionsMessage={() => "Subscriber List"}
+                                />
+                              )} */}
                             </div>
                           </Col>
 
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Doctor Id</label>
+                              <label>{covert({ id: "doctorid" })}</label>
                               <input
                                 type="text"
                                 readOnly={editinput}
-                                placeholder="Doctor Id"
+                                placeholder={covert({ id: "doctorid" })}
                                 name="doctorId"
                                 value={values.doctorId}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                               />
+                              {/* {editinput ? (
+                                <input
+                                  type="text"
+                                  readOnly={true}
+                                  // placeholder={userdoctorId?.label}
+                                  value={userdoctorId?.label}
+                                  // value={userinfo?.doctorId}
+                                  // name="doctorId"
+                                  // value={values.doctorId}
+                                  // onChange={handleChange}
+                                  // onBlur={handleBlur}
+                                />
+                              ) : (
+                                <Select
+                                  placeholder={covert({ id: "doctorid" })}
+                                  name="doctorId"
+                                  readOnly={editinput}
+                                  value={userdoctorId}
+                                  onChange={(value) => {
+                                    UsersetDoctorId(value);
+                                    values.doctorId = value.value;
+                                  }}
+                                  onBlur={handleBlur}
+                                  isSearchable={true}
+                                  options={docListOption}
+                                  isLoading={false}
+                                  loadingMessage={() => "Fetching Data"}
+                                  noOptionsMessage={() => "Doctor List"}
+                                />
+                              )} */}
                             </div>
                           </Col>
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Phone Number</label>
+                              <label>{covert({ id: "Phone Number" })}</label>
                               <input
                                 readOnly={editinput}
                                 placeholder="1235-452-567"
@@ -664,7 +908,7 @@ function Admiration() {
                           </Col>
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Email</label>
+                              <label>{covert({ id: "Email" })}</label>
                               <input
                                 readOnly={true}
                                 placeholder="example@gmail.com"
@@ -680,9 +924,9 @@ function Admiration() {
                               />
                             </div>
                           </Col>
-                          <Col lg={4} md={6}>
+                          {/* <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Birth Date</label>
+                              <label>{covert({ id: "Birth Date" })}</label>
                               <input
                                 type="date"
                                 name="birthdate"
@@ -691,20 +935,35 @@ function Admiration() {
                                 onBlur={handleBlur}
                               />
                             </div>
-                          </Col>
+                          </Col> */}
                           <Col lg={4} md={6}>
-                            <div className="orgn-tags mt-4">
-                              <ul>
-                                <li>Admin</li>
-                                <li>Doctor</li>
-                                <li>Reception</li>
-                              </ul>
+                            <label>{covert({ id: "User Role List" })}</label>
+                            <div className="form-group slct-srt">
+                              {
+                                <select
+                                  onChange={handleChange}
+                                  value={values.role}
+                                  name="role"
+                                >
+                                  <option selected value="">
+                                    {covert({ id: "User Role List" })}
+                                  </option>
+                                  {roleList?.map((value, i) => (
+                                    <option value={value?._id} key={i}>
+                                      {locale == "ar"
+                                        ? value?.arabicName
+                                        : value?.englishName}
+                                    </option>
+                                  ))}
+                                </select>
+                              }
                             </div>
                           </Col>
 
-                          <Col lg={12} md={12}>
+                          <Col lg={6} md={6}>
                             <div className="form-group">
-                              <label>AuxileryCenter Id</label>
+                              <label>{covert({ id: "auxid" })}</label>
+
                               <input
                                 placeholder="1235-452-567"
                                 name="auxiliaryCenterId"
@@ -718,10 +977,17 @@ function Admiration() {
                           <Col lg={4} md={6} className="porcn-retle">
                             <div className="prt-fmr">
                               <div className="re-edit-pss benfits-btn mt-3">
-                                <button>Reset Password </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setPasswordModal(true)}
+                                >
+                                  {covert({ id: "resetpassword" })}{" "}
+                                </button>
 
                                 {!editinput ? (
-                                  <button type="submit">Save</button>
+                                  <button type="submit">
+                                    {covert({ id: "Save" })}
+                                  </button>
                                 ) : (
                                   <button
                                     onClick={(e) => {
@@ -729,7 +995,7 @@ function Admiration() {
                                       setEdit(!editinput);
                                     }}
                                   >
-                                    Edit
+                                    {covert({ id: "edit" })}
                                   </button>
                                 )}
                               </div>
@@ -742,20 +1008,20 @@ function Admiration() {
                 </Formik>
               </div>
             </Tab>
-            <Tab eventKey="user" title="User Management">
+            <Tab eventKey="user" title={covert({ id: "User Management" })}>
               <div className="admintration-tbs-dtl p-0">
                 <div className="data-tble fixheder-tbl">
                   {/* <Table className="table-responsive" onScroll={handleScroll}> */}
                   <Table>
                     <thead>
                       <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Username</th>
-                        <th>Account Status</th>
-                        <th>Organization</th>
-                        <th>User Rols</th>
-                        <th>Actions</th>
+                        <th>{covert({ id: "onlyid" })}</th>
+                        <th>{covert({ id: "Name" })}</th>
+                        <th> {covert({ id: "username" })}</th>
+                        <th>{covert({ id: "Account Status" })}</th>
+                        <th> {covert({ id: "organization" })}</th>
+                        <th>{covert({ id: "userroles" })}</th>
+                        <th> {covert({ id: "Action" })}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -770,7 +1036,7 @@ function Admiration() {
                               Active
                             </td>
                             <td>Organization123</td>
-                            <td>
+                            {/* <td>
                               <div className="slct-cage">
                                 <div>
                                   <label className="multipal-slt">
@@ -809,6 +1075,11 @@ function Admiration() {
                                   <option>Rolename</option>
                                 </select>
                               )}
+                            </td> */}
+                            <td>
+                              {locale == "ar"
+                                ? value?.role?.arabicName
+                                : value?.role?.englishName}
                             </td>
                             <td>
                               <span className="two-edit-actions">
@@ -823,8 +1094,15 @@ function Admiration() {
                                   <AiFillEdit />
                                 </button>
 
-                                <button className="brdr-btn-btn">
-                                  Reset Password
+                                <button
+                                  className="brdr-btn-btn"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setUserID(value);
+                                    setPasswordModal(true);
+                                  }}
+                                >
+                                  {covert({ id: "resetpassword" })}
                                 </button>
                               </span>
                             </td>
@@ -847,14 +1125,14 @@ function Admiration() {
                 <center>
                   <button className="load-more-btn mb-4" onClick={LoadMore}>
                     {" "}
-                    Load More{" "}
+                    {covert({ id: "loadmore" })}
                   </button>
                 </center>
               ) : (
                 ""
               )}
             </Tab>
-            <Tab eventKey="adduser" title="Add New User">
+            <Tab eventKey="adduser" title={covert({ id: "Add New User" })}>
               <div className="admintration-tbs-dtl">
                 <Formik
                   initialValues={{
@@ -865,16 +1143,20 @@ function Admiration() {
                     thirdName: "",
                     lastName: "",
                     phoneNumber: "",
-                    birthdate: "",
-                    password: "123456",
-                    // gender: userinfo?.gender
-                    //   ? userinfo?.gender
-                    //   : "",
+                    // birthdate: "",
+                    password: "",
+                    pharmacyId: "",
+                    laboratoryId: "",
+                    ImagingCenterId: "",
+                    auxiliaryCenterId: "",
                     instituionId: null,
-
+                    role: "",
                     doctorId: null,
                     subscriberId: null,
                     auxiliaryCenterId: null,
+                    // gender: userinfo?.gender
+                    //   ? userinfo?.gender
+                    //   : "",
                   }}
                   onSubmit={AddUser}
                   // validationSchema={DoctorForm}
@@ -899,9 +1181,9 @@ function Admiration() {
                         <Row>
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>User Name</label>
+                              <label> {covert({ id: "username" })}</label>
                               <input
-                                placeholder="username123"
+                                placeholder={covert({ id: "username" })}
                                 name="username"
                                 value={values.username}
                                 onChange={handleChange}
@@ -911,9 +1193,9 @@ function Admiration() {
                           </Col>
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>First Name</label>
+                              <label>{covert({ id: "fname" })}</label>
                               <input
-                                placeholder="firstName"
+                                placeholder={covert({ id: "fname" })}
                                 name="firstName"
                                 value={values.firstName}
                                 onChange={handleChange}
@@ -923,9 +1205,9 @@ function Admiration() {
                           </Col>
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Second Name</label>
+                              <label>{covert({ id: "secondname" })}</label>
                               <input
-                                placeholder="Secondname"
+                                placeholder={covert({ id: "secondname" })}
                                 name="secondName"
                                 value={values.secondName}
                                 onChange={handleChange}
@@ -935,9 +1217,9 @@ function Admiration() {
                           </Col>
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Third Name</label>
+                              <label>{covert({ id: "thirdname" })}</label>
                               <input
-                                placeholder="Thirdname"
+                                placeholder={covert({ id: "thirdname" })}
                                 name="thirdName"
                                 value={values.thirdName}
                                 onChange={handleChange}
@@ -947,9 +1229,9 @@ function Admiration() {
                           </Col>
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Last Name</label>
+                              <label>{covert({ id: "lname" })}</label>
                               <input
-                                placeholder="Lastname"
+                                placeholder={covert({ id: "lname" })}
                                 name="lastName"
                                 value={values.lastName}
                                 onChange={handleChange}
@@ -959,34 +1241,100 @@ function Admiration() {
                           </Col>
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Doctor Id</label>
+                              <label>{covert({ id: "doctorid" })}</label>
                               <input
-                                placeholder="Doctor"
+                                placeholder={covert({ id: "doctorid" })}
                                 name="doctorId"
                                 value={values.doctorId}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                              />
+
+                              {/* <Select
+                                placeholder={covert({ id: "doctorid" })}
+                                name="doctorId"
+                                value={doctorId}
+                                onChange={(value) => {
+                                  setDoctorId(value);
+                                  values.doctorId = value.value;
+                                }}
+                                onBlur={handleBlur}
+                                isSearchable={true}
+                                options={docListOption}
+                                isLoading={false}
+                                loadingMessage={() => "Fetching Data"}
+                                noOptionsMessage={() => "Doctor List"}
+                              /> */}
+                            </div>
+                          </Col>
+
+                          <Col lg={4} md={6}>
+                            <div className="form-group">
+                              <label>{covert({ id: "Pharmacy Id" })}</label>
+                              <input
+                                placeholder={covert({ id: "Pharmacy Id" })}
+                                name="doctorId"
+                                value={values.pharmacyId}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                              />
+                            </div>
+                          </Col>
+
+                          <Col lg={4} md={6}>
+                            <div className="form-group">
+                              <label>{covert({ id: "laboratory Id" })}</label>
+                              <input
+                                placeholder={covert({ id: "laboratory Id" })}
+                                name="laboratoryId"
+                                value={values.laboratoryId}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                              />
+                            </div>
+                          </Col>
+
+                          <Col lg={4} md={6}>
+                            <div className="form-group">
+                              <label>
+                                {covert({ id: "ImagingCenter Id" })}
+                              </label>
+                              <input
+                                placeholder={covert({ id: "ImagingCenter Id" })}
+                                name="ImagingCenterId"
+                                value={values.ImagingCenterId}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                               />
                             </div>
                           </Col>
                           <Col lg={4} md={6}>
-                            {/* <div className="form-group">
-                            <label>Organization</label>
-                            <input
-                              placeholder="Alvin Hospital"
-                              // value={userinfo?.username}
-                            />
-                          </div> */}
                             <div className="form-group">
-                              <label>Instituion Id</label>
+                              <label>{covert({ id: "InstitutionId" })}</label>
                               <input
-                                placeholder="Alvin Hospital"
+                                placeholder={covert({ id: "InstitutionId" })}
                                 name="instituionId"
                                 value={values.instituionId}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 readOnly={editinput}
                               />
+                              {/* 
+                              <Select
+                                placeholder={covert({ id: "InstitutionId" })}
+                                name="instituionId"
+                                value={instituionId}
+                                onChange={(value) => {
+                                  setInstitutionId(value);
+                                  values.instituionId = value.value;
+                                }}
+                                onBlur={handleBlur}
+                                isSearchable={true}
+                                options={InstitutionListOption}
+                                isLoading={false}
+                                loadingMessage={() => "Fetching Data"}
+                                noOptionsMessage={() => "Institution List"}
+                              /> */}
                             </div>
                           </Col>
 
@@ -1002,21 +1350,38 @@ function Admiration() {
                         </Col> */}
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Subscriber Id</label>
+                              <label>{covert({ id: "SubscribweId" })}</label>
                               <input
                                 type="text"
-                                placeholder="subscriber Id"
+                                placeholder={covert({ id: "SubscribweId" })}
                                 name="subscriberId"
                                 value={values.subscriberId}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
+                                // readOnly={editinput}
                               />
+
+                              {/* <Select
+                                placeholder={covert({ id: "SubscribweId" })}
+                                name="subscriberId"
+                                value={benfId}
+                                onChange={(value) => {
+                                  setBenefId(value);
+                                  values.subscriberId = value.value;
+                                }}
+                                onBlur={handleBlur}
+                                isSearchable={true}
+                                options={benefOption}
+                                isLoading={false}
+                                loadingMessage={() => "Fetching Data"}
+                                noOptionsMessage={() => "Subscriber List"}
+                              /> */}
                             </div>
                           </Col>
 
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Phone Number</label>
+                              <label>{covert({ id: "Phone Number" })}</label>
                               <input
                                 placeholder="1235-452-567"
                                 name="phoneNumber"
@@ -1024,17 +1389,17 @@ function Admiration() {
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                               />
-                              <img
+                              {/* <img
                                 className="inpt-img"
                                 src={"/assets/images/accept-mob.svg"}
                                 alt="img"
-                              />
+                              /> */}
                             </div>
                           </Col>
 
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Email</label>
+                              <label>{covert({ id: "Email" })}</label>
                               <input
                                 placeholder="1235-452-567"
                                 name="email"
@@ -1042,17 +1407,30 @@ function Admiration() {
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                               />
-                              <img
+                              {/* <img
                                 className="inpt-img"
                                 src={"/assets/images/accept-mob.svg"}
                                 alt="img"
-                              />
+                              /> */}
                             </div>
                           </Col>
 
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>Birth Date</label>
+                              <label>{covert({ id: "password" })}</label>
+                              <input
+                                placeholder={covert({ id: "password" })}
+                                name="password"
+                                value={values.password}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                              />
+                            </div>
+                          </Col>
+
+                          {/* <Col lg={4} md={6}>
+                            <div className="form-group">
+                              <label>{covert({ id: "Birth Date" })}</label>
                               <input
                                 type="date"
                                 name="birthdate"
@@ -1061,11 +1439,11 @@ function Admiration() {
                                 onBlur={handleBlur}
                               />
                             </div>
-                          </Col>
+                          </Col> */}
 
                           <Col lg={4} md={6}>
                             <div className="form-group">
-                              <label>AuxileryCenter Id</label>
+                              <label>{covert({ id: "auxid" })}</label>
                               <input
                                 placeholder="1235-452-567"
                                 name="auxiliaryCenterId"
@@ -1076,18 +1454,46 @@ function Admiration() {
                             </div>
                           </Col>
 
-                          <Col md={4}>
-                            <div className="re-edit-pss benfits-btn mt-4">
-                              {/* <button>Discard </button> */}
-                              <button
-                                className="clr-btn"
-                                for="form-datas"
-                                type="submit"
-                              >
-                                Submit
-                              </button>
+                          <Col lg={4} md={6}>
+                            <label>{covert({ id: "User Role List" })}</label>
+                            <div className="form-group slct-srt">
+                              {
+                                <select
+                                  onChange={handleChange}
+                                  value={values.role}
+                                  name="role"
+                                >
+                                  <option selected value="">
+                                    {covert({ id: "User Role List" })}
+                                  </option>
+                                  {roleList?.map((value, i) => (
+                                    <option value={value?._id} key={i}>
+                                      {locale == "ar"
+                                        ? value?.arabicName
+                                        : value?.englishName}
+                                    </option>
+                                  ))}
+                                </select>
+                              }
                             </div>
                           </Col>
+
+                          <Row>
+                            <Col md={4}></Col>
+                            <Col md={4}>
+                              <div className="re-edit-pss benfits-btn mt-4">
+                                {/* <button>Discard </button> */}
+                                <button
+                                  className="clr-btn"
+                                  for="form-datas"
+                                  type="submit"
+                                >
+                                  {covert({ id: "Submit" })}
+                                </button>
+                              </div>
+                            </Col>
+                            <Col md={4}></Col>
+                          </Row>
 
                           {/* <Col md={4}>
                           {userrole?.length > 0 && (
@@ -1147,6 +1553,18 @@ function Admiration() {
         show={userEdit}
         onHide={() => setUserEditModal(false)}
         userinfo={userInformation}
+        InstitutionListOption={InstitutionListOption}
+        benefOption={benefOption}
+        docListOption={docListOption}
+        docList={docList}
+        benefList={benefList}
+        institutionList={institutionList}
+        roleList={roleList}
+      />
+      <ChangePassword
+        show={passwordmodal}
+        onHide={() => setPasswordModal(false)}
+        useridforpasswordchange={useridforpasswordchange}
       />
     </div>
   );

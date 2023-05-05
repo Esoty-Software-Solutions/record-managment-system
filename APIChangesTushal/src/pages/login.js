@@ -22,7 +22,7 @@ const Login = () => {
   useEffect(() => {
     if (Login_res) {
       if (Login_res?.data?.statusCode == "200") {
-        // console.log("Login_res",Login_res?.data?.data?.username)
+        console.log("Login_res",Login_res?.data?.data?.username)
         localStorage.setItem("Zept_Auth_token_User", Login_res?.data?.token);
         localStorage.setItem("Zept_User", Login_res?.data?.data?.username);
         localStorage.setItem("Zept_UserId", Login_res?.data?.data?._id);

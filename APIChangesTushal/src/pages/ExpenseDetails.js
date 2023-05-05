@@ -5,6 +5,7 @@ import { Worker, Viewer } from "@react-pdf-viewer/core";
 import { useSelector } from "react-redux";
 import { pageNavigationPlugin } from "@react-pdf-viewer/page-navigation";
 import dynamic from "next/dynamic";
+import { useIntl } from "react-intl";
 const PdfViewer = dynamic(() => import("@/Component/PdfViewer"), {
   ssr: false,
 });
@@ -34,12 +35,12 @@ function ExpenseDetail() {
   const EditSideComponent = (e) => {
     setEditSideComponent(true);
   };
-
+  const { formatMessage: covert } = useIntl();
   return (
     <div>
       <div className="main-content">
         <div className="flter-section">
-          <h3 class="fltr-drop">Filter</h3>
+          <h3 class="fltr-drop">{covert({ id: "filter" })}</h3>
           <div className={filterview ? "mt-4" : "removefltr"}>
             <div className="slct-srt">
               <Row>
@@ -122,9 +123,9 @@ function ExpenseDetail() {
               <table className="clms-drl-tbl border-1">
                 <thead>
                   <tr>
-                    <th>Service</th>
-                    <th>Package</th>
-                    <th>Actions</th>
+                    <th>{covert({ id: "Service" })}</th>
+                    <th>{covert({ id: "Package" })}</th>
+                    <th>{covert({ id: "Action" })}</th>
                   </tr>
                 </thead>
                 <tbody>

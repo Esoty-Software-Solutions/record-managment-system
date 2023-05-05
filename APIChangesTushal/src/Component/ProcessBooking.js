@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Col,
   OverlayTrigger,
@@ -8,18 +8,23 @@ import {
   Tooltip,
 } from "react-bootstrap";
 
-import { BiReset } from "react-icons/bi";
+import { BiReset, BiSortAlt2 } from "react-icons/bi";
 
 import { useDispatch, useSelector } from "react-redux";
 import {
   GetData,
   MedicalCenters,
   UpdateAppointment,
+  getAppointmentStatus,
 } from "../redux/actions/action";
 import Swal from "sweetalert2";
 import moment from "moment/moment";
+import { useRouter } from "next/router";
+import { useIntl } from "react-intl";
 
 function ProcessBooking() {
+  const { locale } = useRouter();
+
   // const tableref = useRef();
   // const tablebodyref = useRef();
   // const tableheadref = useRef();
@@ -43,13 +48,33 @@ function ProcessBooking() {
   const [completed, setCompleted] = useState(false);
   const [top, setTop] = useState();
   const [conut, setObjectCount] = useState(0);
+  const [appointmentStatusid, setAPpoinMntStatus] = useState("");
+  const [sorting, setSorting] = useState("descending");
+  const [medicalcenterid, setMedicalCenterid] = useState("");
+  const [appointmentList, setAppointMentList] = useState([]);
+
   const [todate, setToDate] = useState("");
-  const { data_res, medica_res } = useSelector((state) => state.fetchdata);
+  const { data_res, medica_res, appointment_List } = useSelector(
+    (state) => state.fetchdata
+  );
+  // const {  } = useSelector((state) => state.fetchdata);
+
   const { update_res } = useSelector((state) => state.submitdata);
   const [filterview, setfilterView] = useState(true);
   useEffect(() => {
-    setLoader(true);
-    if (totaldata === false) {
+    dispatch(MedicalCenters());
+    dispatch(getAppointmentStatus(0, 500, ""));
+  }, []);
+
+  const APICall = (
+    value,
+    appointmentStatusID,
+    medicalcenterID,
+    fromdate,
+    todate,
+    sorting
+  ) => {
+    if (totaldata == false) {
       dispatch(
         GetData(
           fromdate,
@@ -60,21 +85,78 @@ function ProcessBooking() {
           booked,
           completed,
           pending,
-          cancelled
+          cancelled,
+          value ? value : searchq,
+          appointmentStatusid
+            ? appointmentStatusid
+            : appointmentStatusID
+            ? appointmentStatusID
+            : "",
+          medicalcenterid
+            ? medicalcenterid
+            : medicalcenterID
+            ? medicalcenterID
+            : "",
+          sorting
         )
       );
-      dispatch(MedicalCenters());
     } else {
       setLoader(false);
     }
+  };
+
+  useEffect(() => {
+    APICall(
+      "",
+      appointmentStatusid,
+      medicalcenterid,
+      fromdate,
+      todate,
+      sorting
+    );
     return () => {
       dispatch({ type: "GET_DATA_RESPONSE", payload: "" });
     };
-  }, [skip, booked, completed, pending, cancelled, healthID]);
+  }, [
+    skip,
+    booked,
+    completed,
+    pending,
+    cancelled,
+    healthID,
+    medicalcenterid,
+    appointmentStatusid,
+    searchq,
+    fromdate,
+    todate,
+    sorting,
+  ]);
+
+  const debounce = (func) => {
+    let timer;
+    return function (...args) {
+      const context = this;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        func.apply(context, args);
+      }, 500);
+    };
+  };
+
+  const optimizedFn = useCallback(
+    debounce((valu, app, medical, fromdate, todate, sorting) => {
+      setLoader(true);
+      APICall(valu, app, medical, fromdate, todate, sorting);
+
+      // setData([]);
+    }),
+    []
+  );
 
   useEffect(() => {
     if (data_res) {
-      if (data_res?.data?.codeStatus == "200") {
+      if (data_res?.data?.statusCode == "200") {
         setLoader(false);
         // if (!booked) {
         //   setData((pre) => [...pre, ...data_res?.data?.data?.objectArray]);
@@ -109,7 +191,7 @@ function ProcessBooking() {
 
   useEffect(() => {
     if (medica_res) {
-      if (medica_res?.data?.codeStatus == "200") {
+      if (medica_res?.data?.statusCode == "200") {
         setMedicalData(medica_res?.data?.data?.objectArray);
       } else {
         Swal.fire({
@@ -126,7 +208,7 @@ function ProcessBooking() {
 
   useEffect(() => {
     if (update_res) {
-      if (update_res?.data?.codeStatus == "200") {
+      if (update_res?.data?.statusCode == "200") {
         dispatch(
           GetData(
             fromdate,
@@ -158,14 +240,15 @@ function ProcessBooking() {
     };
   }, [update_res]);
 
-  const updateAppointeMent = (e, id, type) => {
+  const updateAppointeMent = (e, apptid, bookingid) => {
     e.preventDefault();
     setsKip(0);
     setCompleted(false);
     setBooked(false);
     setPending(false);
     setCancelled(false);
-    dispatch(UpdateAppointment(id, type));
+    setAPpoinMntStatus("");
+    dispatch(UpdateAppointment(apptid, bookingid));
     // setsKip();
   };
 
@@ -197,66 +280,6 @@ function ProcessBooking() {
     }
   }
 
-  // const handleStatus = (e) => {
-  //   e.preventDefault();
-
-  //   // if (e.target.value === "") {
-  //   //   setData([]);
-  //   //   setsKip(0);
-  //   //   setStatuss("");
-  //   //   setTotalData(false);
-  //   // } else {
-  //   //   setStatuss(e.target.value);
-  //   //   setsKip(0);
-  //   //   setTotalData(false);
-  //   // }
-
-  //   console.log("E", e.target.checked);
-  //   if (e.target.value == "booked") {
-  //     if (booked === true) {
-  //       console.log("E", e.target.value);
-  //       setData([]);
-  //       setsKip(0);
-  //       setBooked(false);
-  //     } else {
-  //       setBooked(true);
-  //     }
-  //   }
-
-  //   if (e.target.value == "completed") {
-  //     if (completed === true) {
-  //       console.log("E", e.target.value);
-  //       setData([]);
-  //       setsKip(0);
-  //       setCompleted(false);
-  //     } else {
-  //       setCompleted(true);
-  //     }
-  //   }
-
-  //   if (e.target.value == "pending") {
-  //     if (pending == true) {
-  //       console.log("E", e.target.value);
-  //       setData([]);
-  //       setsKip(0);
-  //       setPending(false);
-  //     } else {
-  //       setPending(true);
-  //     }
-  //   }
-
-  //   if (e.target.value == "cancelled") {
-  //     console.log("E", e.target.value);
-  //     if (cancelled === true) {
-  //       setData([]);
-  //       setsKip(0);
-  //       setCancelled(false);
-  //     } else {
-  //       setCancelled(true);
-  //     }
-  //   }
-  // };
-
   const handleBooked = (e) => {
     setTotalData(false);
     setsKip(0);
@@ -278,30 +301,6 @@ function ProcessBooking() {
     setCancelled(e.target.checked);
   };
 
-  // useEffect(() => {
-  //   window.addEventListener("scroll", handleScroll);
-  //   return () => window.removeEventListener("scroll", handleScroll);
-  // }, []);
-
-  const ResetStatus = (e, val) => {
-    e.preventDefault();
-    setsKip(0);
-    setCompleted(false);
-    setBooked(false);
-    setPending(false);
-    setCancelled(false);
-    dispatch(UpdateAppointment(val?.appointmentId, "pending"));
-  };
-
-  const setHeathFilter = (e) => {
-    e.preventDefault();
-    setTotalData(false);
-    setsKip(0);
-    console.log("sdsad", e.target.value);
-
-    setHeatlhId(e.target.value);
-  };
-
   const LoadMore = () => {
     if (totaldata === false) {
       setLoader(true);
@@ -313,14 +312,6 @@ function ProcessBooking() {
   };
 
   useEffect(() => {
-    // if (conut == data?.length) {
-    //   setTotalData(true);
-    // }
-    // // if (data_res?.data?.data?.objectCount >= data?.length) {
-    // if (conut > data?.length) {
-    //   setTotalData(false);
-    // }
-
     if (conut <= skip + limit) {
       setTotalData(true);
     } else {
@@ -329,21 +320,28 @@ function ProcessBooking() {
     }
   }, [conut, data]);
 
-  let details = [];
-  for (const property in data) {
-    details.push(
-      <p>
-        {property}: {data[property]}
-      </p>
-    );
-  }
-  console.log("dsd", details);
+  const { formatMessage: covert } = useIntl();
+
+  useEffect(() => {
+    if (appointment_List) {
+      if (appointment_List?.data?.statusCode == "200") {
+        setAppointMentList(appointment_List?.data?.data?.objectArray);
+      } else {
+        Swal.fire({
+          icon: "error",
+          text: "Something Went Wrong",
+        });
+      }
+    }
+  }, [appointment_List]);
+
+  console.log("sorting", sorting);
   return (
     <div>
       <div className="main-content">
         <div className="flter-section">
           <h3 className="fltr-drop">
-            Filter{" "}
+            {covert({ id: "filter" })}
             <img
               onClick={() => setfilterView(!filterview)}
               className={
@@ -357,7 +355,9 @@ function ProcessBooking() {
             <div className="filter-chek">
               <div className="flter">
                 <label className="flterbox">
-                  Booked
+                  {/* Booked */}
+                  {covert({ id: "Booked" })}
+
                   <input
                     type="checkbox"
                     onChange={handleBooked}
@@ -371,7 +371,9 @@ function ProcessBooking() {
               </div>
               <div className="flter">
                 <label className="flterbox">
-                  Cancelled
+                  {/* Cancelled */}
+                  {covert({ id: "Cancelled" })}
+
                   <input
                     type="checkbox"
                     // onChange={handleStatus}
@@ -385,7 +387,9 @@ function ProcessBooking() {
               </div>
               <div className="flter">
                 <label className="flterbox">
-                  Completed
+                  {/* Completed */}
+
+                  {covert({ id: "Completed" })}
                   <input
                     type="checkbox"
                     onChange={handleCompleted}
@@ -399,7 +403,9 @@ function ProcessBooking() {
               </div>
               <div className="flter">
                 <label className="flterbox">
-                  Pending
+                  {/* Pending */}
+
+                  {covert({ id: "Pending" })}
                   <input
                     type="checkbox"
                     // onChange={handleStatus}
@@ -414,8 +420,19 @@ function ProcessBooking() {
               <div className="srch-text">
                 <input
                   type="text"
-                  placeholder="Search here..."
-                  onChange={(e) => SetsearchQuery(e.target.value)}
+                  placeholder={covert({ id: "Search" })}
+                  value={searchq}
+                  onChange={(e) => {
+                    SetsearchQuery(e.target.value);
+                    optimizedFn(
+                      e.target.value,
+                      appointmentStatusid,
+                      medicalcenterid,
+                      fromdate,
+                      todate,
+                      sorting
+                    );
+                  }}
                 />
                 <img src={"/assets/images/srch-1.svg"} alt="img" />
               </div>
@@ -424,33 +441,65 @@ function ProcessBooking() {
               <Row>
                 <Col md={3}>
                   <div className="flter d-inline date-input">
-                    <label>From</label>
+                    <label>{covert({ id: "From" })}</label>
                     <input
                       type="date"
-                      onChange={(e) => setFromDate(e.target.value)}
+                      onChange={(e) => {
+                        setTotalData(false);
+                        setFromDate(e.target.value);
+                      }}
                     />
                   </div>
                 </Col>
                 <Col md={3}>
                   <div className="flter d-inline date-input">
-                    <label>To</label>
+                    <label>{covert({ id: "To" })}</label>
                     <input
                       type="date"
-                      onChange={(e) => setToDate(e.target.value)}
+                      onChange={(e) => {
+                        setTotalData(false);
+                        setToDate(e.target.value);
+                      }}
                     />
                   </div>
                 </Col>
+
                 <Col md={3}>
                   <div className="flter d-inline">
-                    <label>Sort by Booking Date</label>
+                    <label> {covert({ id: "Medical Center List" })}</label>
+
+                    <select
+                      value={medicalcenterid}
+                      onChange={(e) => {
+                        setTotalData(false);
+                        setMedicalCenterid(e.target.value);
+                        // optimizedFn1(e.target.value, "medical");
+                      }}
+                    >
+                      <option selected value="">
+                        {covert({ id: "Medical Center List" })}
+                      </option>
+                      {medical &&
+                        medical?.map((value, i) => (
+                          <option value={value?._id} key={i}>
+                            {value?.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </Col>
+                {/* <Col md={3}>
+                  <div className="flter d-inline">
+                    <label>{covert({ id: "Sort" })}</label>
+
                     <select>
                       <option>last 7 Days</option>
                       <option>last 15 Days</option>
                       <option>last 20 Days</option>
-                      {/* <option>last 7 Days</option> */}
+               
                     </select>
                   </div>
-                </Col>
+                </Col> */}
                 {/* <Col md={3}>
                   <div className="flter d-inline">
                     <label>Status</label>
@@ -466,9 +515,10 @@ function ProcessBooking() {
                   </div>
                 </Col> */}
 
-                <Col md={3}>
+                {/* <Col md={3}>
                   <div className="flter d-inline">
-                    <label>Search list of Health centers</label>
+                   
+                    <label>{covert({ id: "SearchBy" })}</label>
                     <select onChange={setHeathFilter}>
                       <option selected value="">
                         Search list of health centers
@@ -480,6 +530,32 @@ function ProcessBooking() {
                         : ""}
                     </select>
                   </div>
+                </Col> */}
+
+                <Col md={3}>
+                  <div className="flter d-inline">
+                    <label> {covert({ id: "Appoinment Status List" })}</label>
+                    {/* <label>{covert({ id: "SearchBy" })}</label> */}
+                    <select
+                      value={appointmentStatusid}
+                      onChange={(e) => {
+                        setTotalData(false);
+                        setAPpoinMntStatus(e.target.value);
+                        // optimizedFn1(e.target.value, "appointment");
+                      }}
+                    >
+                      <option selected value="">
+                        {covert({ id: "Appoinment Status List" })}
+                      </option>
+                      {appointmentList?.map((value, i) => (
+                        <option value={value?._id} key={i}>
+                          {locale == "ar"
+                            ? value?.arabicName
+                            : value?.englishName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </Col>
               </Row>
             </div>
@@ -487,50 +563,77 @@ function ProcessBooking() {
         </div>
 
         <div className="restet-tble">
-          <h3>{conut} Total Processing Requests</h3>
+          <h3>
+            {conut} {covert({ id: "Total" })}
+            {/* Total Processing Requests */}
+          </h3>
           <div className="data-tble fixheder-tbl">
             {/* <Table className="table-responsive" onScroll={handleScroll}> */}
             <Table>
               <thead>
                 <tr>
-                  <th>ID No.</th>
-                  <th>Patient Name</th>
-                  <th>Doctors Name</th>
-                  <th>Speciality</th>
-                  <th>Level</th>
-                  <th>Center Name</th>
-                  <th>District/City</th>
-                  <th>Center Info</th>
-                  <th>Appt. Time</th>
-                  <th>Appt. Price</th>
-                  <th>Notes </th>
-                  <th>Actions</th>
+                  <th>{covert({ id: "idno" })}</th>
+                  <th>{covert({ id: "Beneficiary Name" })}</th>
+
+                  <th>{covert({ id: "Phone Number" })}</th>
+                  <th>{covert({ id: "doctorsname" })}</th>
+                  <th>{covert({ id: "Specialty" })}</th>
+
+                  <th>{covert({ id: "CenterName" })}</th>
+                  {/* <th>{covert({ id: "District/city" })}</th> */}
+                  {/* <th>{covert({ id: "CenterInfo" })}</th> */}
+                  <th style={{ cursor: "pointer" }}>
+                    {covert({ id: "ApptDate" })}
+                    <span
+                      onClick={() => {
+                        setTotalData(false);
+                        sorting == "descending"
+                          ? setSorting("ascending")
+                          : setSorting("descending");
+                      }}
+                    >
+                      <BiSortAlt2 />
+                    </span>
+                  </th>
+                  {/* <th>{covert({ id: "ApptTime" })}</th> */}
+                  <th>{covert({ id: "ApptimeSlot" })}</th>
+                  {/* <th>{covert({ id: "ApptPrice" })}</th> */}
+                  <th>{covert({ id: "Notes" })}</th>
+                  <th>{covert({ id: "Appt Status" })}</th>
                 </tr>
               </thead>
               <tbody>
-                {details &&
-                  details?.map((val, i) => (
+                {data &&
+                  data?.map((val, i) => (
                     <tr key={i}>
-                      <td>{val?.patient?.patientId}</td>
-                      <td>{val?.patient?.patientName}</td>
+                      <td>{val?._id}</td>
                       <td>
-                        {val?.doctorObject?.firstName +
+                        {val?.beneficiary?.firstName +
                           " " +
-                          val?.doctorObject?.middleName +
+                          val?.beneficiary?.secondName +
                           " " +
-                          val?.doctorObject?.lastName}
+                          val?.beneficiary?.lastName}
                       </td>
-                      <td>{val?.doctorObject?.specialty} </td>
-                      <td>{val?.doctorObject?.level} </td>
-                      <td>{val?.medicalCenterObject?.name} </td>
+                      <td>{val?.createdBy?.phoneNumber}</td>
+
                       <td>
-                        {/* {val?.medicalCenterObject?.district} */}
+                        {val?.schedule?.doctor?.firstName +
+                          " " +
+                          val?.schedule?.doctor?.secondName +
+                          " " +
+                          val?.schedule?.doctor?.lastName}
+                      </td>
+                      <td>{val?.schedule?.doctor?.specialty?.englishName} </td>
+
+                      <td>{val?.schedule?.medicalCenter?.name} </td>
+                      {/* <td>
+                      
 
                         <OverlayTrigger
                           placement="top"
                           overlay={
                             <Tooltip id={`tooltip-${i}`}>
-                              {val?.medicalCenterObject?.district}
+                              {val?.medicalCenter?.district}
                             </Tooltip>
                           }
                         >
@@ -547,29 +650,27 @@ function ProcessBooking() {
                         </OverlayTrigger>
 
                         <br />
-                      </td>
-                      <td>
+                      </td> */}
+                      {/* <td>
                         <OverlayTrigger
                           placement="top"
                           overlay={
                             <Tooltip id={`tooltip-${i}`}>
-                              {val?.medicalCenterObject?.address}
+                              {val?.medicalCenterId?.address}
                             </Tooltip>
                           }
                         >
                           <p>
-                            {val?.medicalCenterObject?.address?.substr(0, 10)}
+                            {val?.medicalCenterId?.address?.substr(0, 10)}
 
-                            {val?.medicalCenterObject?.address?.substring(
-                              10
-                            ) ? (
+                            {val?.medicalCenterId?.address?.substring(10) ? (
                               <>....</>
                             ) : (
                               ""
                             )}
                           </p>
                         </OverlayTrigger>
-                      </td>
+                      </td> */}
                       <td>
                         {moment(val?.appointmentDate).format(
                           // "MMMM Do YYYY, h:mm:ss a"
@@ -579,22 +680,35 @@ function ProcessBooking() {
                         <br />
                         {/* {val?.timeslot} */}
                       </td>
-                      <td>{val?.price}</td>
+                      <td>{val?.timeSlot?.englishName}</td>
+                      {/* <td>{val?.price}</td> */}
                       <td>
                         <OverlayTrigger
                           placement="top"
                           overlay={
-                            <Tooltip id={`tooltip-${i}`}>{val?.notes}</Tooltip>
+                            // <Tooltip id={`tooltip-${i}`}>{val?.notes}</Tooltip>
+                            <Tooltip id={`tooltip-${i}`}>
+                              {val?.schedule?.medicalCenter?.description}
+                            </Tooltip>
                           }
                         >
                           <p>
-                            {val?.notes?.substr(0, 10)}
+                            {val?.schedule?.medicalCenter?.description?.substr(
+                              0,
+                              10
+                            )}
 
-                            {val?.notes?.substring(10) ? <>....</> : ""}
+                            {val?.schedule?.medicalCenter?.description?.substring(
+                              10
+                            ) ? (
+                              <>....</>
+                            ) : (
+                              ""
+                            )}
                           </p>
                         </OverlayTrigger>
                       </td>
-                      <td className="link-acces-btn">
+                      {/* <td className="link-acces-btn">
                         {val?.appointmentStatus === "pending" ||
                         val?.appointmentStatus === "completed" ||
                         val?.appointmentStatus === "rejected" ? (
@@ -642,7 +756,7 @@ function ProcessBooking() {
                             <img
                               src={"/assets/images/remove-i.svg"}
                               alt="img"
-                              // onClick={(e) => ResetStatus(e, val)}
+                             
                             />
 
                             <span>Refused By User</span>
@@ -650,11 +764,7 @@ function ProcessBooking() {
                               className="msg-btn border-0"
                               onClick={(e) => ResetStatus(e, val)}
                             >
-                              {/* <img
-                                style={{ background: "transparent" }}
-                                src={Msgicon}
-                                alt="img"
-                              /> */}
+                              
                               <BiReset style={{ fontSize: "15px" }} />
                             </button>
                             <button className="msg-btn border-0">
@@ -677,11 +787,7 @@ function ProcessBooking() {
                               className="msg-btn border-0"
                               onClick={(e) => ResetStatus(e, val)}
                             >
-                              {/* <img
-                                style={{ background: "transparent" }}
-                                src={Msgicon}
-                                alt="img"
-                              /> */}
+                              
                               <BiReset style={{ fontSize: "15px" }} />
                             </button>
                             <button className="msg-btn border-0">
@@ -694,6 +800,27 @@ function ProcessBooking() {
                           </div>
                         ) : (
                           ""
+                        )}
+                      </td> */}
+                      <td className="slct-srt">
+                        {appointmentList && (
+                          <select
+                            onChange={(e) =>
+                              updateAppointeMent(e, val?._id, e.target.value)
+                            }
+                            value={val?.appointmentStatus?._id}
+                          >
+                            <option selected value="">
+                              {covert({ id: "Appoinment Status List" })}
+                            </option>
+                            {appointmentList?.map((value, i) => (
+                              <option value={value?._id} key={i}>
+                                {locale == "ar"
+                                  ? value?.arabicName
+                                  : value?.englishName}
+                              </option>
+                            ))}
+                          </select>
                         )}
                       </td>
                     </tr>
@@ -723,7 +850,7 @@ function ProcessBooking() {
               <center>
                 <button className="load-more-btn" onClick={LoadMore}>
                   {" "}
-                  Load More{" "}
+                  {covert({ id: "loadmore" })}
                 </button>
               </center>
             ) : (

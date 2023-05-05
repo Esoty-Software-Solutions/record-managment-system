@@ -6,7 +6,10 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { ActionTypes } from "@/redux/actions/actionTypes";
 import "react-pdf/dist/esm/Page/TextLayer.css";
+import { IntlProvider } from "react-intl";
 import Layout from "@/Layout";
+// import { messages } from "@/Component/Lang";
+import messages from "../../public/lang.json"
 export default function App({ Component, pageProps }) {
   const router = useRouter();
   useEffect(() => {
@@ -36,9 +39,10 @@ export default function App({ Component, pageProps }) {
       true
     );
   }, []);
+  const { locale } = useRouter();
 
   return (
-    <>
+    <IntlProvider locale={locale} messages={messages[locale]}>
       {router?.pathname == "/login" ? (
         <Provider store={store}>
           <Component {...pageProps} />
@@ -57,6 +61,6 @@ export default function App({ Component, pageProps }) {
           </Layout>
         </Provider>
       )}
-    </>
+    </IntlProvider>
   );
 }

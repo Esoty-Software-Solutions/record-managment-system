@@ -2,29 +2,22 @@ import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Modal, Row, Col } from "react-bootstrap";
 import { Formik } from "formik";
-import {
-  AddReltationShipBeneficary,
-  UpdateRelationShipBeneficary,
-} from "../../../redux/actions/action";
+import { AddCity } from "../../../redux/actions/action";
 import ErrorComponent from "../../../Utils/ErrorComponent";
 import { useIntl } from "react-intl";
 import { useRouter } from "next/router";
 
-function AddRelationShip(props) {
-  const { formatMessage: covert } = useIntl();
+function UpdateModal(props) {
   const dispatch = useDispatch();
   // console.log(props.specialLists);
   const handleSubmit = (values) => {
-    if (props?.data?._id) {
-      dispatch(UpdateRelationShipBeneficary(values, props?.data?._id));
-    } else {
-      dispatch(AddReltationShipBeneficary(values));
-    }
+    dispatch(AddCity(values));
     // setTimeout(() => {
 
     // }, 1500);
     props.onHide();
   };
+  const { formatMessage: covert } = useIntl();
 
   const { locale } = useRouter();
   return (
@@ -37,20 +30,17 @@ function AddRelationShip(props) {
     >
       <Modal.Body className="p-0 ">
         <div className="add-new-bene institution">
-          <h4>{covert({ id: "addRelationShip" })}</h4>
+          <h4>
+            {covert({ id: "addnewcity" })}
+            {/* Add New City */}
+          </h4>
           <Row>
             <Col md={12}>
               <Formik
                 initialValues={{
-                  englishName: props?.data?.englishName
-                    ? props?.data?.englishName
-                    : "",
-                  backendName: props?.data?.backendName
-                    ? props?.data?.backendName
-                    : "",
-                  arabicName: props?.data?.arabicName
-                    ? props?.data?.arabicName
-                    : "",
+                  englishName: "",
+                  backendName: "",
+                  arabicName: "",
                 }}
                 onSubmit={handleSubmit}
                 // validationSchema={DoctorForm}
@@ -72,7 +62,7 @@ function AddRelationShip(props) {
                         <Row>
                           <Col md={6}>
                             <div className="form-group">
-                              <label>{covert({ id: "englishName" })} </label>
+                              <label>{covert({ id: "englishName" })}</label>
                               <input
                                 type="text"
                                 name="englishName"
@@ -113,7 +103,7 @@ function AddRelationShip(props) {
 
                           <Col md={6}>
                             <div className="form-group">
-                              <label>{covert({ id: "arabicName" })} </label>
+                              <label>{covert({ id: "arabicName" })}</label>
                               <input
                                 type="text"
                                 placeholder={covert({ id: "arabicName" })}
@@ -147,9 +137,7 @@ function AddRelationShip(props) {
             {covert({ id: "Cancel" })}
           </button>
           <button className="add-fmy-btn" type="submit" form="form-data">
-            {props?.data?._id
-              ? covert({ id: "onlyUpdate" })
-              : covert({ id: "add" })}{" "}
+            {covert({ id: "Update" })}
           </button>
         </div>
       </Modal.Footer>
@@ -157,4 +145,4 @@ function AddRelationShip(props) {
   );
 }
 
-export default AddRelationShip;
+export default UpdateModal;

@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { GetData, MedicalCenters } from "../redux/actions/action";
 import Swal from "sweetalert2";
 import moment from "moment/moment";
+import { useIntl } from "react-intl";
 
 function ExpenseClaim() {
   const dispatch = useDispatch();
@@ -214,6 +215,7 @@ function ExpenseClaim() {
     setOpenRow();
   };
 
+  const { formatMessage: covert } = useIntl();
   return (
     <div>
       <div className="main-content">
@@ -222,7 +224,7 @@ function ExpenseClaim() {
             <Row>
               <Col md={4} className="mb-4">
                 <div className="flter d-inline">
-                  <label>Institution</label>
+                  <label>{covert({ id: "Institution" })}</label>
                   <select>
                     <option>List of institutions</option>
                     <option>List of institutions</option>
@@ -232,7 +234,7 @@ function ExpenseClaim() {
               </Col>
               <Col md={4} className="mb-4">
                 <div className="flter d-inline">
-                  <label>Medical Center</label>
+                  <label>{covert({ id: "MedicalCenter" })}</label>
                   <select>
                     <option>List of medical centers</option>
                     <option>List of institutions</option>
@@ -242,7 +244,8 @@ function ExpenseClaim() {
               </Col>
               <Col md={4} className="mb-4">
                 <div className="flter d-inline">
-                  <label>Claim Report</label>
+                  <label>{covert({ id: "ClaimReport" })}</label>
+
                   <select>
                     <option>List of claim reports</option>
                     <option>List of medical centers</option>
@@ -257,14 +260,14 @@ function ExpenseClaim() {
             <div className="srch-text mb-2">
               <input
                 type="text"
-                placeholder="Search here..."
+                placeholder={covert({ id: "Search" })}
                 onChange={(e) => SetsearchQuery(e.target.value)}
               />
               <img src={"/assets/images/srch-1.svg"} alt="img" />
             </div>
             <div className="flter">
               <label className="flterbox">
-                Pending (32432)
+                {covert({ id: "Pending" })} (32432)
                 <input type="checkbox" />
                 <b></b>
                 <span className="checkmark"></span>
@@ -272,7 +275,7 @@ function ExpenseClaim() {
             </div>
             <div className="flter">
               <label className="flterbox">
-                Approved (123214)
+                {covert({ id: "Approved" })} (123214)
                 <input type="checkbox" />
                 <b></b>
                 <span className="checkmark"></span>
@@ -280,7 +283,7 @@ function ExpenseClaim() {
             </div>
             <div className="flter">
               <label className="flterbox">
-                Denied (12321)
+                {covert({ id: "Denied" })} (12321)
                 <input type="checkbox" />
                 <b></b>
                 <span className="checkmark"></span>
@@ -288,7 +291,7 @@ function ExpenseClaim() {
             </div>
             <div className="flter">
               <label className="flterbox">
-                Revised (214)
+                {covert({ id: "Revised" })} (214)
                 <input type="checkbox" />
                 <b></b>
                 <span className="checkmark"></span>
@@ -298,23 +301,23 @@ function ExpenseClaim() {
         </div>
 
         <div className="restet-tble">
-          <h3>Expenses</h3>
+          <h3>{covert({ id: "onlyExpenses" })}</h3>
           <div className="expenses-tble">
             <Table className="table-responsive">
               <thead>
                 <tr>
-                  <th>claim ID</th>
-                  <th>patient ID</th>
-                  <th>Patient Name</th>
-                  <th>Service ID</th>
-                  <th>Service Name</th>
-                  <th>Service Date</th>
-                  <th>Amount Charged</th>
-                  <th>Amount Allowed</th>
-                  <th>Ammount Covered</th>
-                  <th>Amount not Covered</th>
+                  <th>{covert({ id: "claim ID" })}</th>
+                  <th>{covert({ id: "patient ID" })}</th>
+                  <th>{covert({ id: "patientname" })}</th>
+                  <th>{covert({ id: "Service ID" })}</th>
+                  <th>{covert({ id: "Service Name" })}</th>
+                  <th>{covert({ id:"Service Date" })}</th>
+                  <th>{covert({ id:"Amount Charged" })}</th>
+                  <th>{covert({ id:"Amount Allowed" })}</th>
+                  <th>{covert({ id:"Ammount Covered" })}</th>
+                  <th>{covert({ id:"Amount not Covered" })}</th>
                   <th>
-                    Actions
+                    {covert({ id: "Action" })}
                     <span>
                       <img src={"/assets/images/check-mark.svg"} alt="img" />{" "}
                       <img src={"/assets/images/cross-mark.svg"} alt="img" />
@@ -705,7 +708,7 @@ function ExpenseClaim() {
           <div className="reje-res">
             <h3>Rejection or Revise Reason</h3>
             <div className="serch-section mb-4">
-              <input type="name" placeholder="Search by name" />
+              <input type="name" placeholder={covert({ id: "Search" })} />
               <img src={"/assets/images/search-normal.svg"} alt="img" />
             </div>
             <Table>
@@ -760,10 +763,10 @@ function ExpenseClaim() {
         <Modal.Footer>
           <div className="can-sve mt-0 reson-btn-btn">
             <button onClick={handleClose} className="cls-btn-btn">
-              Cancel
+              {covert({ id: "Cancel" })}
             </button>
             <button className="add-fmy-btn" onClick={handleClose}>
-              Add
+              {covert({ id: "Add" })}
             </button>
           </div>
         </Modal.Footer>

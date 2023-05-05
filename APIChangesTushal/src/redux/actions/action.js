@@ -28,53 +28,28 @@ export const GetData =
     booked,
     completed,
     pending,
-    cancelled
+    cancelled,
+    search,
+    appointmentStatusid,
+    medicalid,
+    sorting
   ) =>
   async (dispatch) => {
-    // let pending = null;
-    // let completed = completed;
-    // let booked = booked;
-    // let cancelled = null;
     const token = getToken();
-    // if (status === "pending") {
-    //   pending = true;
-    //   completed = false;
-    //   booked = false;
-    //   cancelled = false;
-    // }
-    // if (status === "booked") {
-    //   pending = false;
-    //   completed = false;
-    //   booked = true;
-    //   cancelled = false;
-    // }
 
-    // if (status === "cancelled") {
-    //   pending = false;
-    //   completed = false;
-    //   booked = false;
-    //   cancelled = true;
-    // }
-
-    // if (status === "completed") {
-    //   pending = false;
-    //   completed = true;
-    //   booked = false;
-    //   cancelled = false;
-    // }
     try {
       const response = await AdminAPI.get(
-        `/appointments?limit=${limit}&skip=${skip}&medicalCenterId=${healthID}&${
-          pending
-            ? `pending=${pending}&completed=${completed}&booked=${booked}&cancelled=${cancelled}`
-            : completed
-            ? `pending=${pending}&completed=${completed}&booked=${booked}&cancelled=${cancelled}`
-            : booked
-            ? `pending=${pending}&completed=${completed}&booked=${booked}&cancelled=${cancelled}`
-            : cancelled
-            ? `pending=${pending}&completed=${completed}&booked=${booked}&cancelled=${cancelled}`
-            : ""
-        }
+        `/appointments?limit=${limit}&skip=${skip}&healthCenterId=${healthID}&${`pending=${
+          pending ? pending : ""
+        }&completed=${completed ? completed : ""}&booked=${
+          booked ? booked : ""
+        }&cancelled=${cancelled ? cancelled : ""}`} &searchQuery=${
+          search ? search : ""
+        }&appointmentStatusId=${
+          appointmentStatusid ? appointmentStatusid : ""
+        }&medicalCenterId=${medicalid ? medicalid : ""}&fromDate=${
+          fromdate ? fromdate : ""
+        }&toDate=${todate ? todate : ""}&sort=${sorting ? sorting : ""}
 
         `,
 
@@ -123,7 +98,7 @@ export const MedicalCenterList =
     } catch (err) {
       dispatch({
         type: ActionTypes.GET_DATA_MEDICAL_RESPONSE,
-        payload: err.response.data.message,
+        payload: err?.response?.data?.message,
       });
     }
   };
@@ -183,44 +158,48 @@ export const SideBarFun = (boolvlu) => async (dispatch) => {
   });
 };
 
-export const UpdateAppointment = (appointmentId, type) => async (dispatch) => {
-  const token = getToken();
-  try {
-    const response = await AdminAPI.post(
-      `appointments/${appointmentId}`,
-      {
-        appointmentStatus: type,
-      },
-      {
-        headers: {
-          Authorization: token,
+export const UpdateAppointment =
+  (appointmentId, bookingid) => async (dispatch) => {
+    const token = getToken();
+    try {
+      const response = await AdminAPI.post(
+        `appointments/${appointmentId}`,
+        {
+          appointmentStatus: bookingid,
         },
-      }
-    );
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
 
-    dispatch({ type: ActionTypes.UPDATE_APPOINTMENT_LIST, payload: response });
-  } catch (err) {
-    dispatch({
-      type: ActionTypes.UPDATE_APPOINTMENT_LIST,
-      payload: err?.response?.data?.message,
-    });
-  }
-};
+      dispatch({
+        type: ActionTypes.UPDATE_APPOINTMENT_LIST,
+        payload: response,
+      });
+    } catch (err) {
+      dispatch({
+        type: ActionTypes.UPDATE_APPOINTMENT_LIST,
+        payload: err?.response?.data?.message,
+      });
+    }
+  };
 
 export const AddMedical = (values, mainmobile, file) => async (dispatch) => {
   const token = getToken();
 
   const formData = new FormData();
   formData.append("name", values?.centername);
-  formData.append("city", values?.city);
-  formData.append("district", values?.district);
+  formData.append("cityId", values?.city);
+  // formData.append("district", values?.district);
   formData.append("description", values.description);
   formData.append("address", values?.address);
   // formData.append("email","user@example.com")
   formData.append("facebookLink", values?.facbooklink);
   formData.append("website", values?.weblink);
   for (let i = 0; i < file.length; i++) {
-    formData.append("image", file[i]);
+    formData.append("file", file[i]);
   }
   for (let i = 0; i < mainmobile.length; i++) {
     formData.append("phoneNumber", mainmobile[i]);
@@ -240,7 +219,7 @@ export const AddMedical = (values, mainmobile, file) => async (dispatch) => {
   } catch (err) {
     dispatch({
       type: ActionTypes.ADD_MEDICAL_RES,
-      payload: err?.response?.data?.message,
+      payload: err?.response?.data,
     });
   }
 };
@@ -251,14 +230,14 @@ export const UpdateMedicals =
     const formData = new FormData();
     formData.append("name", values?.centername);
     formData.append("city", values?.city);
-    formData.append("district", values?.district);
+    // formData.append("district", values?.district);
     formData.append("description", values.description);
     formData.append("address", values?.address);
     // formData.append("email","user@example.com")
     formData.append("facebookLink", values?.facbooklink);
     formData.append("website", values?.weblink);
     for (let i = 0; i < file.length; i++) {
-      formData.append("image", file[i]);
+      formData.append("file", file[i]);
     }
     for (let i = 0; i < mainmobile.length; i++) {
       formData.append("phoneNumber", mainmobile[i]);
@@ -266,7 +245,7 @@ export const UpdateMedicals =
     // formData.append(    googleMapLink: "string")
 
     try {
-      const response = await AdminAPI.post(`/medicalCenters/${id}`, formData, {
+      const response = await AdminAPI.patch(`/medicalCenters/${id}`, formData, {
         headers: {
           Authorization: token,
         },
@@ -289,9 +268,9 @@ export const DoctorList =
 
     try {
       const response = await AdminAPI.get(
-        `/doctors?skip=${skip}&limit=${limit}&specialty=${specialty}&searchQuery=${
-          searchQuery !== undefined ? searchQuery : ""
-        }`,
+        `/doctors?skip=${skip}&limit=${limit}&medicalSpecialtyId=${
+          specialty ? specialty : ""
+        }&searchQuery=${searchQuery !== undefined ? searchQuery : ""}`,
         {
           headers: {
             Authorization: token,
@@ -305,72 +284,44 @@ export const DoctorList =
     } catch (err) {
       dispatch({
         type: ActionTypes.GET_DOCTOR_LIST,
-        payload: err?.response?.data?.message,
+        payload: err?.response?.data,
       });
     }
   };
 
-export const DoctorListForForm = () => async (dispatch) => {
-  const token = getToken();
-
-  try {
-    const response = await AdminAPI.get(`/doctors`, {
-      headers: {
-        Authorization: token,
-      },
-    });
-    dispatch({
-      type: ActionTypes.GET_DOCTOR_LIST_FORM,
-      payload: response,
-    });
-  } catch (err) {
-    dispatch({
-      type: ActionTypes.GET_DOCTOR_LIST_FORM,
-      payload: err.response.data.message,
-    });
-  }
-};
-
-export const AddDoctors = (values) => async (dispatch) => {
-  const token = getToken();
-
-  try {
-    const response = await AdminAPI.post(
-      "/doctors",
-      {
-        firstName: values.first,
-        middleName: values.middle,
-        lastName: values.last,
-        specialty: values.specialty,
-        level: values.level,
-        gender: values.gender,
-        birthdate: values.birthdate,
-      },
-      {
-        headers: {
-          Authorization: token,
-        },
-      }
-    );
-    dispatch({
-      type: ActionTypes.ADD_DOCTOR_RES,
-      payload: response,
-    });
-  } catch (err) {
-    dispatch({
-      type: ActionTypes.ADD_DOCTOR_RES,
-      payload: err.response.data.message,
-    });
-  }
-};
-
-export const CityList = () => async (dispatch) => {
+export const DoctorListForForm = (skip, limit) => async (dispatch) => {
   const token = getToken();
 
   try {
     const response = await AdminAPI.get(
-      // "/cities",
-      "/misc/cities",
+      `/doctors?skip=${skip}&limit=${limit}`,
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+    dispatch({
+      type: ActionTypes.GET_DOCTOR_LIST_FORM,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.GET_DOCTOR_LIST_FORM,
+      payload: err?.response?.data?.message,
+    });
+  }
+};
+
+export const CityList = (skip, limit, search) => async (dispatch) => {
+  // export const CityList = () => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.get(
+      `/misc/cities?skip=${skip}&limit=${limit}&searchQuery=${
+        search ? search : ""
+      }`,
       {
         headers: {
           Authorization: token,
@@ -384,20 +335,25 @@ export const CityList = () => async (dispatch) => {
   } catch (err) {
     dispatch({
       type: ActionTypes.GET_CITY_LIST,
-      payload: err.response.data.message,
+      payload: err?.response?.data?.message,
     });
   }
 };
 
-export const MedicalSpecialList = () => async (dispatch) => {
+export const MedicalSpecialList = (skip, limit, search) => async (dispatch) => {
   const token = getToken();
 
   try {
-    const response = await AdminAPI.get("/misc/medicalSpecialties", {
-      headers: {
-        Authorization: token,
-      },
-    });
+    const response = await AdminAPI.get(
+      `/misc/medicalSpecialties?skip=${skip}&limit=${limit}&searchQuery=${
+        search ? search : ""
+      }`,
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
     dispatch({
       type: ActionTypes.GET_MEDICAL_SPECIAL_LIST_RESPONSE,
       payload: response,
@@ -405,7 +361,7 @@ export const MedicalSpecialList = () => async (dispatch) => {
   } catch (err) {
     dispatch({
       type: ActionTypes.GET_MEDICAL_SPECIAL_LIST_RESPONSE,
-      payload: err.response.data.message,
+      payload: err?.response?.data?.message,
     });
   }
 };
@@ -416,6 +372,32 @@ export const GetSchedulesByMedical = (id) => async (dispatch) => {
   try {
     const response = await AdminAPI.get(
       `/schedules?medicalCenterId=${id}&groupBy=doctor`,
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+    dispatch({
+      type: ActionTypes.GET_SCHEDULES_RES_MEDICAL,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.GET_SCHEDULES_RES_MEDICAL,
+      payload: err.response.data.message,
+    });
+  }
+};
+
+export const GetSchedulesByMedicalNEw = (id, search) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.get(
+      `/schedules?medicalCenterId=${id}&groupBy=doctor&searchQuery=${
+        search ? search : ""
+      }`,
       {
         headers: {
           Authorization: token,
@@ -523,7 +505,8 @@ export const updateMedicalSchedule = (scheduleId, data) => async (dispatch) => {
   const token = getToken();
 
   try {
-    const response = await AdminAPI.post(`/schedules/${scheduleId}`, data, {
+    // const response = await AdminAPI.post(`/schedules/${scheduleId}`, data, {
+    const response = await AdminAPI.patch(`/schedules/${scheduleId}`, data, {
       headers: {
         Authorization: token,
       },
@@ -539,13 +522,60 @@ export const updateMedicalSchedule = (scheduleId, data) => async (dispatch) => {
     });
   }
 };
+export const ChangePasswordAPI = (data, id) => async (dispatch) => {
+  const token = getToken();
 
-export const GetSchedulesByDoctor = (id) => async (dispatch) => {
+  try {
+    const response = await AdminAPI.post(`/users/${id}/changePassword`, data, {
+      headers: {
+        Authorization: token,
+      },
+    });
+    dispatch({
+      type: ActionTypes.CHANGE_PASSWORD_API,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.CHANGE_PASSWORD_API,
+      payload: err?.response?.data,
+    });
+  }
+};
+
+// export const GetSchedulesByDoctor = (id) => async (dispatch) => {
+//   const token = getToken();
+
+//   try {
+//     const response = await AdminAPI.get(
+//       `/schedules?doctorId=${id}&groupBy=medicalCenter`,
+//       {
+//         headers: {
+//           Authorization: token,
+//         },
+//       }
+//     );
+//     dispatch({
+//       type: ActionTypes.GET_SCHEDULES_RES_DOCTOR,
+//       payload: response,
+//     });
+//   } catch (err) {
+//     dispatch({
+//       type: ActionTypes.GET_SCHEDULES_RES_DOCTOR,
+//       payload: err.response.data.message,
+//     });
+//   }
+// };
+
+export const GetSchedulesByDoctor = (id, search) => async (dispatch) => {
   const token = getToken();
 
   try {
     const response = await AdminAPI.get(
-      `/schedules?doctorId=${id}&groupBy=medicalCenter`,
+      // `/schedules/new?doctorId=${id}&groupBy=medicalCenter`,
+      `/schedules?doctorId=${id}&groupBy=medicalCenter&searchQuery=${
+        search ? search : ""
+      }`,
       {
         headers: {
           Authorization: token,
@@ -563,7 +593,6 @@ export const GetSchedulesByDoctor = (id) => async (dispatch) => {
     });
   }
 };
-
 export const GetSchedulesByDoctorForScdhule = (id) => async (dispatch) => {
   const token = getToken();
 
@@ -613,26 +642,32 @@ export const GetUserInfo = () => async (dispatch) => {
   }
 };
 
-export const GetAdmistratotUserList = (skip, limit) => async (dispatch) => {
-  const token = getToken();
+export const GetAdmistratotUserList =
+  (skip, limit, search) => async (dispatch) => {
+    const token = getToken();
 
-  try {
-    const response = await AdminAPI.get(`/users?limit=${limit}&skip=${skip}`, {
-      headers: {
-        Authorization: token,
-      },
-    });
-    dispatch({
-      type: ActionTypes.GET_USER_ADMIS_LIST,
-      payload: response,
-    });
-  } catch (err) {
-    dispatch({
-      type: ActionTypes.GET_USER_ADMIS_LIST,
-      payload: err?.response?.data?.message,
-    });
-  }
-};
+    try {
+      const response = await AdminAPI.get(
+        `/users?limit=${limit}&skip=${skip}&searchQuery=${
+          search ? search : ""
+        }`,
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
+      dispatch({
+        type: ActionTypes.GET_USER_ADMIS_LIST,
+        payload: response,
+      });
+    } catch (err) {
+      dispatch({
+        type: ActionTypes.GET_USER_ADMIS_LIST,
+        payload: err?.response?.data?.message,
+      });
+    }
+  };
 
 export const PostUserInfo = (values) => async (dispatch) => {
   const token = getToken();
@@ -675,6 +710,47 @@ export const PostUserInfo = (values) => async (dispatch) => {
   }
 };
 
+export const Update_User_info = (values, id) => async (dispatch) => {
+  const token = getToken();
+  // const formdata = new FormData();
+  // formdata.append("username", values.username);
+  // formdata.append("phoneNumber", values.phone);
+  // formdata.append("beneficiaryId", values.beneid);
+  try {
+    const response = await AdminAPI.patch(
+      "/users/" + id,
+      // {
+      //   username: values.username,
+      //   firstName: values.firstname,
+      //   lastName: values.lastname,
+      //   secondName: values.secondName,
+      //   thirdName: values.thirdName,
+      //   phoneNumber: values.phone,
+      //   email: values.email,
+      //   // beneficiaryId: values.beneid,
+      //   subscriberId: "hELLO",
+      //   doctorId: values.doctor_id,
+      //   institutionId: "dsadas",
+      // },
+      values,
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+    dispatch({
+      type: ActionTypes.UPDATE_USER_RES,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.UPDATE_USER_RES,
+      payload: err?.response?.data?.message,
+    });
+  }
+};
+
 export const MedicalCenterListForModal = () => async (dispatch) => {
   const token = getToken();
   try {
@@ -691,23 +767,61 @@ export const MedicalCenterListForModal = () => async (dispatch) => {
   } catch (err) {
     dispatch({
       type: ActionTypes.GET_DATA_MEDICAL_RESPONSE,
-      payload: err.response.data.message,
+      payload: err?.response?.data?.message,
     });
   }
 };
 
-export const UpdateDoc = (values, id) => async (dispatch) => {
+export const AddDoctors = (values) => async (dispatch) => {
   const token = getToken();
 
   try {
     const response = await AdminAPI.post(
+      "/doctors",
+      {
+        firstName: values.first,
+        secondName: values.second,
+        middleName: values.middle,
+        lastName: values.last,
+        specialtyId: values.specialtyId,
+        level: null,
+        // level: values.level,
+        gender: values.gender,
+        // gender: values.gender,
+        birthdate: values.birthdate ? values.birthdate : null,
+      },
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+    dispatch({
+      type: ActionTypes.ADD_DOCTOR_RES,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.ADD_DOCTOR_RES,
+      payload: err?.response,
+    });
+  }
+};
+export const UpdateDoc = (values, id) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.patch(
       `/doctors/${id}`,
       {
         firstName: values.first,
-        middleName: values.middle,
+        secondName: values.second,
         lastName: values.last,
-        specialty: values.specialty,
-        level: values.level,
+        specialtyId: values.specialty,
+        // level: values.level,
+        // gender: values.gender,
+        level: null,
+        // level: values.level,
         gender: values.gender,
         birthdate: values.birthdate,
       },
@@ -754,11 +868,13 @@ export const LogoutAPI = () => async (dispatch) => {
   }
 };
 
-export const BenefeciaryList = (limit, skip) => async (dispatch) => {
+export const BenefeciaryList = (limit, skip, search) => async (dispatch) => {
   const token = getToken();
   try {
     const response = await AdminAPI.get(
-      `/subscribers?limit=${limit}&skip=${skip}`,
+      `/subscribers?limit=${limit}&skip=${skip}&searchQuery=${
+        search ? search : ""
+      }`,
       // `/beneficiaries?limit=${limit}&skip=${skip}`,
       {
         headers: {
@@ -774,7 +890,7 @@ export const BenefeciaryList = (limit, skip) => async (dispatch) => {
   } catch (err) {
     dispatch({
       type: ActionTypes.GET_BENE_LIST,
-      payload: err.response.data.message,
+      payload: err?.response?.data?.message,
     });
   }
 };
@@ -816,7 +932,29 @@ export const GetInstitutionList = () => async (dispatch) => {
   } catch (err) {
     dispatch({
       type: ActionTypes.GET_INSTITUTION_LIST,
-      payload: err.response.data.message,
+      payload: err?.response?.data?.message,
+    });
+  }
+};
+
+
+export const GetRoleList = () => async (dispatch) => {
+  const token = getToken();
+  try {
+    const response = await AdminAPI.get(`/role`, {
+      headers: {
+        Authorization: token,
+      },
+    });
+
+    dispatch({
+      type: ActionTypes.GET_ROLE_LIST,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.GET_ROLE_LIST,
+      payload: err?.response?.data?.message,
     });
   }
 };
@@ -842,6 +980,83 @@ export const CreateBenefeciary = (data) => async (dispatch) => {
   } catch (err) {
     dispatch({
       type: ActionTypes.ADD_BENEFICIARY_DATA,
+      payload: err?.response,
+    });
+  }
+};
+
+export const UpdateBenefeciary = (data, id) => async (dispatch) => {
+  const token = getToken();
+  try {
+    const response = await AdminAPI.patch(
+      // `/beneficiaries`,
+      `/subscribers/${id}`,
+      data,
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+
+    dispatch({
+      type: ActionTypes.UPDATE_BENEFICARY_RES,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.UPDATE_BENEFICARY_RES,
+      payload: err?.response?.data?.message,
+    });
+  }
+};
+
+export const GetSingleSubscriber = (id) => async (dispatch) => {
+  const token = getToken();
+  try {
+    const response = await AdminAPI.get(
+      // `/beneficiaries`,
+      `/subscribers/${id}`,
+
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+
+    dispatch({
+      type: ActionTypes.GET_SINGLE_BENEFICIARY_DATA,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.GET_SINGLE_BENEFICIARY_DATA,
+      payload: err.response.data.message,
+    });
+  }
+};
+export const UpdateSubscriber = (data, id) => async (dispatch) => {
+  const token = getToken();
+  try {
+    const response = await AdminAPI.post(
+      // `/beneficiaries`,
+      `/subscribers/${id}`,
+      data,
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+
+    dispatch({
+      type: ActionTypes.UPDATE_BENEFICIARY_DATA,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.UPDATE_BENEFICIARY_DATA,
       payload: err.response.data.message,
     });
   }
@@ -888,13 +1103,42 @@ export const DeleteSchdeuleOneByOne = (id) => async (dispatch) => {
   }
 };
 
-export const ReltationShipBeneficary = () => async (dispatch) => {
+export const ReltationShipBeneficary =
+  (skip, limit, search) => async (dispatch) => {
+    const token = getToken();
+
+    try {
+      const response = await AdminAPI.get(
+        // "/relationshipToBeneficiaryEnum",
+        `/misc/relationshipToSubscriberEnum?skip=${skip}&limit=${limit}&searchQuery=${
+          search ? search : ""
+        }`,
+
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
+      dispatch({
+        type: ActionTypes.BENE_RETALTION_LIST,
+        payload: response,
+      });
+    } catch (err) {
+      dispatch({
+        type: ActionTypes.BENE_RETALTION_LIST,
+        payload: err?.response?.data?.message,
+      });
+    }
+  };
+
+export const ReltationShipBeneficarySingle = (id) => async (dispatch) => {
   const token = getToken();
 
   try {
     const response = await AdminAPI.get(
       // "/relationshipToBeneficiaryEnum",
-      "/misc/relationshipToBeneficiaryEnum",
+      "/misc/relationshipToBeneficiaryEnum" + id,
       {
         headers: {
           Authorization: token,
@@ -902,12 +1146,12 @@ export const ReltationShipBeneficary = () => async (dispatch) => {
       }
     );
     dispatch({
-      type: ActionTypes.BENE_RETALTION_LIST,
+      type: ActionTypes.BENE_RETALTION_SINGLE,
       payload: response,
     });
   } catch (err) {
     dispatch({
-      type: ActionTypes.BENE_RETALTION_LIST,
+      type: ActionTypes.BENE_RETALTION_SINGLE,
       payload: err.response.data.message,
     });
   }
@@ -969,13 +1213,15 @@ export const AddHelathreportData = (data, bene_id) => async (dispatch) => {
 
 // New Health isuue post  Updated API for medical issue   // change redux states after api live
 
-export const GenderList = () => async (dispatch) => {
+export const GenderList = (skip, limit, search) => async (dispatch) => {
   const token = getToken();
 
   try {
     const response = await AdminAPI.get(
       // "/cities",
-      "/misc/genderEnum",
+      `/misc/genderEnum?skip=${skip}&limit=${limit}&searchQuery=${
+        search ? search : ""
+      }`,
       {
         headers: {
           Authorization: token,
@@ -989,19 +1235,43 @@ export const GenderList = () => async (dispatch) => {
   } catch (err) {
     dispatch({
       type: ActionTypes.GET_GENDER_LIST,
+      payload: err?.response?.data,
+    });
+  }
+};
+
+export const GenderSingle = (id) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.get(
+      // "/cities",
+      "/misc/genderEnum/" + id,
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+    dispatch({
+      type: ActionTypes.GET_GENDER_SINGLE,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.GET_GENDER_SINGLE,
       payload: err.response.data.message,
     });
   }
 };
 
 export const AddHelathreportClinicalVisits =
-  (data, bene_id) => async (dispatch) => {
+  (bene_id, family_id, data) => async (dispatch) => {
     const token = getToken();
 
     try {
       const response = await AdminAPI.post(
         `/subscribers/${bene_id}/beneficiaries/${family_id}/medicalFiles/clinicalVisits`,
-        // `/beneficiaries/${bene_id}/medicalFiles/familyMembers/tushar`,
 
         data,
         {
@@ -1023,12 +1293,13 @@ export const AddHelathreportClinicalVisits =
   };
 
 export const AddHelathreportAllergies =
-  (bene_id, family_id) => async (dispatch) => {
+  (bene_id, family_id, data) => async (dispatch) => {
     const token = getToken();
 
     try {
       const response = await AdminAPI.post(
         `/subscribers/${bene_id}/beneficiaries/${family_id}/medicalFiles/allergies`,
+        data,
         {
           headers: {
             Authorization: token,
@@ -1036,24 +1307,25 @@ export const AddHelathreportAllergies =
         }
       );
       dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
+        type: ActionTypes.ADD_HEALTH_ISSUE_FAMILY_MEMBER,
         payload: response,
       });
     } catch (err) {
       dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
+        type: ActionTypes.ADD_HEALTH_ISSUE_FAMILY_MEMBER,
         payload: err.response.data.message,
       });
     }
   };
 
 export const AddHelathreportSurgeryHistories =
-  (bene_id, family_id) => async (dispatch) => {
+  (bene_id, family_id, data) => async (dispatch) => {
     const token = getToken();
 
     try {
       const response = await AdminAPI.post(
         `/subscribers/${bene_id}/beneficiaries/${family_id}/medicalFiles/surgeryHistories`,
+        data,
         {
           headers: {
             Authorization: token,
@@ -1061,24 +1333,25 @@ export const AddHelathreportSurgeryHistories =
         }
       );
       dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
+        type: ActionTypes.ADD_HEALTH_ISSUE_FAMILY_MEMBER,
         payload: response,
       });
     } catch (err) {
       dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
+        type: ActionTypes.ADD_HEALTH_ISSUE_FAMILY_MEMBER,
         payload: err.response.data.message,
       });
     }
   };
 
 export const AddHelathreportChronicDiseases =
-  (bene_id, family_id) => async (dispatch) => {
+  (bene_id, family_id, data) => async (dispatch) => {
     const token = getToken();
 
     try {
       const response = await AdminAPI.post(
         `/subscribers/${bene_id}/beneficiaries/${family_id}/medicalFiles/chronicDiseases`,
+        data,
         {
           headers: {
             Authorization: token,
@@ -1086,24 +1359,25 @@ export const AddHelathreportChronicDiseases =
         }
       );
       dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
+        type: ActionTypes.ADD_HEALTH_ISSUE_FAMILY_MEMBER,
         payload: response,
       });
     } catch (err) {
       dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
+        type: ActionTypes.ADD_HEALTH_ISSUE_FAMILY_MEMBER,
         payload: err.response.data.message,
       });
     }
   };
 
 export const AddHelathreportMedicalTests =
-  (bene_id, family_id) => async (dispatch) => {
+  (bene_id, family_id, data) => async (dispatch) => {
     const token = getToken();
 
     try {
       const response = await AdminAPI.post(
         `/subscribers/${bene_id}/beneficiaries/${family_id}/medicalFiles/medicalTests`,
+        data,
         {
           headers: {
             Authorization: token,
@@ -1111,12 +1385,65 @@ export const AddHelathreportMedicalTests =
         }
       );
       dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
+        type: ActionTypes.ADD_HEALTH_ISSUE_FAMILY_MEMBER,
         payload: response,
       });
     } catch (err) {
       dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
+        type: ActionTypes.ADD_HEALTH_ISSUE_FAMILY_MEMBER,
+        payload: err.response.data.message,
+      });
+    }
+  };
+
+export const getHightWeightHelath =
+  (subs_id, family_id) => async (dispatch) => {
+    const token = getToken();
+
+    try {
+      const response = await AdminAPI.get(
+        // `/subscribers/${bene_id}/beneficiaries/${family_id}/medicalFiles/medicalTests`,
+        `/subscribers/${subs_id}/beneficiaries/${family_id}/medicalFiles`,
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
+      dispatch({
+        type: ActionTypes.GET_HEIGHT_WEIGHT,
+        payload: response,
+      });
+    } catch (err) {
+      dispatch({
+        type: ActionTypes.GET_HEIGHT_WEIGHT,
+        payload: err.response.data.message,
+      });
+    }
+  };
+
+export const UpdateHightWeightHelath =
+  (subs_id, family_id, data) => async (dispatch) => {
+    const token = getToken();
+
+    try {
+      const response = await AdminAPI.patch(
+        // `/subscribers/${bene_id}/beneficiaries/${family_id}/medicalFiles/medicalTests`,
+        `/subscribers/${subs_id}/beneficiaries/${family_id}/medicalFiles`,
+        data,
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
+      dispatch({
+        type: ActionTypes.UPDATE_HEIGHT_WEIGHT,
+        payload: response,
+      });
+    } catch (err) {
+      dispatch({
+        type: ActionTypes.UPDATE_HEIGHT_WEIGHT,
         payload: err.response.data.message,
       });
     }
@@ -1137,41 +1464,40 @@ export const FamilyMemberClinicalVisits =
         }
       );
       dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
+        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER_CLINIC_VISIT,
         payload: response,
       });
     } catch (err) {
       dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
+        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER_CLINIC_VISIT,
         payload: err.response.data.message,
       });
     }
   };
 
-export const FamilyMemberAllergies =
-  (bene_id, family_id) => async (dispatch) => {
-    const token = getToken();
+export const FamilyMemberAllergies = (subs_id, bene_id) => async (dispatch) => {
+  const token = getToken();
 
-    try {
-      const response = await AdminAPI.get(
-        `/subscribers/${bene_id}/beneficiaries/${family_id}/medicalFiles/allergies`,
-        {
-          headers: {
-            Authorization: token,
-          },
-        }
-      );
-      dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
-        payload: response,
-      });
-    } catch (err) {
-      dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
-        payload: err.response.data.message,
-      });
-    }
-  };
+  try {
+    const response = await AdminAPI.get(
+      `/subscribers/${subs_id}/beneficiaries/${bene_id}/medicalFiles/allergies`,
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+    dispatch({
+      type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER_ALLERGIES,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER_ALLERGIES,
+      payload: err.response.data.message,
+    });
+  }
+};
 
 export const FamilyMemberSurgeryHistories =
   (bene_id, family_id) => async (dispatch) => {
@@ -1187,12 +1513,12 @@ export const FamilyMemberSurgeryHistories =
         }
       );
       dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
+        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER_SURGEROY,
         payload: response,
       });
     } catch (err) {
       dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
+        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER_SURGEROY,
         payload: err.response.data.message,
       });
     }
@@ -1212,12 +1538,12 @@ export const FamilyMemberChronicDiseases =
         }
       );
       dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
+        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER_CHRONIC,
         payload: response,
       });
     } catch (err) {
       dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
+        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER_CHRONIC,
         payload: err.response.data.message,
       });
     }
@@ -1237,12 +1563,12 @@ export const FamilyMemberMedicalTests =
         }
       );
       dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
+        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER_MEDICAL_TEST,
         payload: response,
       });
     } catch (err) {
       dispatch({
-        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER,
+        type: ActionTypes.HEALTH_ISSUE_FAMILY_MEMBER_MEDICAL_TEST,
         payload: err.response.data.message,
       });
     }
@@ -1270,6 +1596,48 @@ export const AddCity = (data) => async (dispatch) => {
   }
 };
 
+export const getSingleCity = (id) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.get(`/misc/cities/${id}`, {
+      headers: {
+        Authorization: token,
+      },
+    });
+    dispatch({
+      type: ActionTypes.GET_SINGLE_CITY,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.GET_SINGLE_CITY,
+      payload: err?.response?.data?.message,
+    });
+  }
+};
+
+export const UpdateCity = (data, id) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.patch(`/misc/cities/${id}`, data, {
+      headers: {
+        Authorization: token,
+      },
+    });
+    dispatch({
+      type: ActionTypes.UPDATE_CITY_RES,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.UPDATE_CITY_RES,
+      payload: err?.response?.data?.message,
+    });
+  }
+};
+
 export const AddMedicalRes = (data) => async (dispatch) => {
   const token = getToken();
 
@@ -1291,13 +1659,64 @@ export const AddMedicalRes = (data) => async (dispatch) => {
   }
 };
 
+export const updateMedicalSpecilaty = (data, id) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.patch(
+      `/misc/medicalSpecialties/${id}`,
+      data,
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+    dispatch({
+      type: ActionTypes.UPDATE_MEDIACLSPECILAITY_RES,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.UPDATE_MEDIACLSPECILAITY_RES,
+      payload: err?.response?.data?.message,
+    });
+  }
+};
+
+export const GetSingleMedicalSpecilaty = (id) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.get(
+      `/misc/medicalSpecialties/${id}`,
+
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+    dispatch({
+      type: ActionTypes.SINGLE_MEDIACLSPECILAITY_RES,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.SINGLE_MEDIACLSPECILAITY_RES,
+      payload: err?.response?.data?.message,
+    });
+  }
+};
+
 export const AddReltationShipBeneficary = (data) => async (dispatch) => {
   const token = getToken();
 
   try {
     const response = await AdminAPI.post(
       // "/relationshipToBeneficiaryEnum",
-      "/misc/relationshipToBeneficiaryEnum",
+      // "/misc/relationshipToBeneficiaryEnum",
+      "/misc/relationshipToSubscriberEnum",
       data,
       {
         headers: {
@@ -1312,6 +1731,32 @@ export const AddReltationShipBeneficary = (data) => async (dispatch) => {
   } catch (err) {
     dispatch({
       type: ActionTypes.ADD_BENE_RETALTION_LIST,
+      payload: err.response.data.message,
+    });
+  }
+};
+
+export const UpdateRelationShipBeneficary = (data, id) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.patch(
+      // "/relationshipToBeneficiaryEnum",
+      "/misc/relationshipToSubscriberEnum/" + id,
+      data,
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+    dispatch({
+      type: ActionTypes.UPDATE_BENE_RETALTION_LIST,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.UPDATE_BENE_RETALTION_LIST,
       payload: err.response.data.message,
     });
   }
@@ -1338,13 +1783,36 @@ export const AddGender = (data) => async (dispatch) => {
   }
 };
 
-export const getMedicalService = () => async (dispatch) => {
+export const UpdateGender = (data, id) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.patch(`/misc/genderEnum/${id}`, data, {
+      headers: {
+        Authorization: token,
+      },
+    });
+    dispatch({
+      type: ActionTypes.UPDATE_GENDER,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.UPDATE_GENDER,
+      payload: err.response.data.message,
+    });
+  }
+};
+
+export const getMedicalService = (skip, limit, Search) => async (dispatch) => {
   const token = getToken();
 
   try {
     const response = await AdminAPI.get(
       // "/relationshipToBeneficiaryEnum",
-      "/misc/medicalServices",
+      `/misc/medicalServices?skip=${skip}&limit=${limit}&searchQuery=${
+        Search ? Search : ""
+      }`,
       {
         headers: {
           Authorization: token,
@@ -1358,6 +1826,31 @@ export const getMedicalService = () => async (dispatch) => {
   } catch (err) {
     dispatch({
       type: ActionTypes.GET_MEDICAL_SERVICE_LIST,
+      payload: err.response.data.message,
+    });
+  }
+};
+
+export const getSingleMedicalService = (id) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.get(
+      // "/relationshipToBeneficiaryEnum",
+      `/misc/medicalServices/${id}`,
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+    dispatch({
+      type: ActionTypes.GET_MEDICAL_SERVICE_SINGLE,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.GET_MEDICAL_SERVICE_SINGLE,
       payload: err.response.data.message,
     });
   }
@@ -1384,6 +1877,26 @@ export const AddMedicalService = (data) => async (dispatch) => {
   }
 };
 
+export const UpdateMedicalService = (data, id) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.patch("/misc/medicalServices/" + id, data, {
+      headers: {
+        Authorization: token,
+      },
+    });
+    dispatch({
+      type: ActionTypes.UPDATE_MEDICAL_SERVICE_RES,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.UPDATE_MEDICAL_SERVICE_RES,
+      payload: err.response.data.message,
+    });
+  }
+};
 export const AddAppointmentStatus = (data) => async (dispatch) => {
   const token = getToken();
 
@@ -1405,36 +1918,93 @@ export const AddAppointmentStatus = (data) => async (dispatch) => {
   }
 };
 
-export const getAppointmentStatus = () => async (dispatch) => {
+export const UpdateAppointmentStatus = (data, id) => async (dispatch) => {
   const token = getToken();
 
   try {
-    const response = await AdminAPI.get("/misc/appointmentStatusEnum", {
-      headers: {
-        Authorization: token,
-      },
-    });
+    const response = await AdminAPI.patch(
+      "/misc/appointmentStatusEnum/" + id,
+      data,
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
     dispatch({
-      type: ActionTypes.GET_APPOINTMENT_LIST,
+      type: ActionTypes.UPDATE_APPOINTMENT_RES,
       payload: response,
     });
   } catch (err) {
     dispatch({
-      type: ActionTypes.GET_APPOINTMENT_LIST,
+      type: ActionTypes.UPDATE_APPOINTMENT_RES,
       payload: err.response.data.message,
     });
   }
 };
 
-export const getTimeSlotEnum = () => async (dispatch) => {
+export const getAppointmentStatus =
+  (skip, limit, search) => async (dispatch) => {
+    const token = getToken();
+
+    try {
+      const response = await AdminAPI.get(
+        `/misc/appointmentStatusEnum?skip=${skip}&limit=${limit}&searchQuery=${
+          search ? search : ""
+        }`,
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
+      dispatch({
+        type: ActionTypes.GET_APPOINTMENT_LIST,
+        payload: response,
+      });
+    } catch (err) {
+      dispatch({
+        type: ActionTypes.GET_APPOINTMENT_LIST,
+        payload: err.response.data.message,
+      });
+    }
+  };
+
+export const getAppointmentSingleStatus = (id) => async (dispatch) => {
   const token = getToken();
 
   try {
-    const response = await AdminAPI.get("/misc/timeSlotEnum", {
+    const response = await AdminAPI.get("/misc/appointmentStatusEnum/" + id, {
       headers: {
         Authorization: token,
       },
     });
+    dispatch({
+      type: ActionTypes.GET_APPOINTMENT_SINGLE,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.GET_APPOINTMENT_SINGLE,
+      payload: err.response.data.message,
+    });
+  }
+};
+
+export const getTimeSlotEnum = (skip, limit, search) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.get(
+      `/misc/timeSlotEnum?skip=${skip}&limit=${limit}&searchQuery=${
+        search ? search : ""
+      }`,
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
     dispatch({
       type: ActionTypes.GET_TIMESLOT_LIST,
       payload: response,
@@ -1442,6 +2012,27 @@ export const getTimeSlotEnum = () => async (dispatch) => {
   } catch (err) {
     dispatch({
       type: ActionTypes.GET_TIMESLOT_LIST,
+      payload: err?.response?.data?.message,
+    });
+  }
+};
+
+export const getTimeSlotEnumSingle = (id) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.get("/misc/timeSlotEnum/" + id, {
+      headers: {
+        Authorization: token,
+      },
+    });
+    dispatch({
+      type: ActionTypes.GET_TIMESLOT_SINGLE,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.GET_TIMESLOT_SINGLE,
       payload: err.response.data.message,
     });
   }
@@ -1468,27 +2059,74 @@ export const addTimeSlotEnum = (data) => async (dispatch) => {
   }
 };
 
-export const getAccountstatusEnum = () => async (dispatch) => {
+export const UpdateTimeSlotEnum = (data, id) => async (dispatch) => {
   const token = getToken();
 
   try {
-    const response = await AdminAPI.get("/misc/accountStatusEnum", {
+    const response = await AdminAPI.patch("/misc/timeSlotEnum/" + id, data, {
       headers: {
         Authorization: token,
       },
     });
     dispatch({
-      type: ActionTypes.GET_ACCOUNTSTATUS_LIST,
+      type: ActionTypes.UPDATE_TIMESLOT_LIST,
       payload: response,
     });
   } catch (err) {
     dispatch({
-      type: ActionTypes.GET_ACCOUNTSTATUS_LIST,
+      type: ActionTypes.UPDATE_TIMESLOT_LIST,
       payload: err.response.data.message,
     });
   }
 };
 
+export const getAccountstatusEnum =
+  (skip, limit, search) => async (dispatch) => {
+    const token = getToken();
+
+    try {
+      const response = await AdminAPI.get(
+        `/misc/accountStatusEnum?skip=${skip}&limit=${limit}&searchQuery=${
+          search ? search : ""
+        }`,
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
+      dispatch({
+        type: ActionTypes.GET_ACCOUNTSTATUS_LIST,
+        payload: response,
+      });
+    } catch (err) {
+      dispatch({
+        type: ActionTypes.GET_ACCOUNTSTATUS_LIST,
+        payload: err.response.data.message,
+      });
+    }
+  };
+
+export const getSingleAccountstatusEnum = (id) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.get("/misc/accountStatusEnum" + id, {
+      headers: {
+        Authorization: token,
+      },
+    });
+    dispatch({
+      type: ActionTypes.GET_ACCOUNTSTATUS_SINGLE,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.GET_ACCOUNTSTATUS_SINGLE,
+      payload: err.response.data.message,
+    });
+  }
+};
 export const addAccountStatusEnum = (data) => async (dispatch) => {
   const token = getToken();
 
@@ -1510,7 +2148,53 @@ export const addAccountStatusEnum = (data) => async (dispatch) => {
   }
 };
 
-export const UpdateUserDetail = (subscriberId, data) => async (dispatch) => {
+export const UpdateAccountStatusEnum = (data, id) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.patch(
+      "/misc/accountStatusEnum/" + id,
+      data,
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+    dispatch({
+      type: ActionTypes.UPDATE_ACCOUNT_STATUS,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.UPDATE_ACCOUNT_STATUS,
+      payload: err.response.data.message,
+    });
+  }
+};
+
+export const UpdateUserDetail = (userId, data) => async (dispatch) => {
+  const token = getToken();
+  // let userId = localStorage.getItem("Zept_UserId");
+  try {
+    const response = await AdminAPI.patch(`/users/${userId}`, data, {
+      headers: {
+        Authorization: token,
+      },
+    });
+    dispatch({
+      type: ActionTypes.UPDATE_USER_DETAILS,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.UPDATE_USER_DETAILS,
+      payload: err.response.data.message,
+    });
+  }
+};
+
+export const UpdateSubscriber1 = (subscriberId, data) => async (dispatch) => {
   const token = getToken();
   // let subscriberId = localStorage.getItem("Zept_UserId");
   try {
@@ -1534,3 +2218,119 @@ export const UpdateUserDetail = (subscriberId, data) => async (dispatch) => {
     });
   }
 };
+
+// Get Single Doctor & medical and other things
+
+export const getSingleDocotor = (id) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.get("/doctors/" + id, {
+      headers: {
+        Authorization: token,
+      },
+    });
+    dispatch({
+      type: ActionTypes.GET_SINGLE_DOCTOR,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.GET_SINGLE_DOCTOR,
+      payload: err.response.data.message,
+    });
+  }
+};
+
+export const getSingleMedical = (id) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.get("/medicalCenters/" + id, {
+      headers: {
+        Authorization: token,
+      },
+    });
+    dispatch({
+      type: ActionTypes.GET_SINGLE_MEDICAL,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.GET_SINGLE_MEDICAL,
+      payload: err.response.data.message,
+    });
+  }
+};
+
+export const getSingleSubScriber = (id) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.get("/subscribers/" + id, {
+      headers: {
+        Authorization: token,
+      },
+    });
+    dispatch({
+      type: ActionTypes.GET_SINGLE_SUBSCRIBER,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.GET_SINGLE_SUBSCRIBER,
+      payload: err.response.data.message,
+    });
+  }
+};
+
+export const getSingleBenificary = (subid, beneid) => async (dispatch) => {
+  const token = getToken();
+
+  try {
+    const response = await AdminAPI.get(
+      `subscribers/${subid}/beneficiaries/${beneid}`,
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+    dispatch({
+      type: ActionTypes.GET_SINGLE_BENEFICIARY,
+      payload: response,
+    });
+  } catch (err) {
+    dispatch({
+      type: ActionTypes.GET_SINGLE_BENEFICIARY,
+      payload: err.response.data.message,
+    });
+  }
+};
+
+export const UpdateRelationShipMember =
+  (data, subid, beneid) => async (dispatch) => {
+    const token = getToken();
+    try {
+      const response = await AdminAPI.patch(
+        // `/beneficiaries`,
+        `subscribers/${subid}/beneficiaries/${beneid}`,
+        data,
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
+
+      dispatch({
+        type: ActionTypes.UPDATE_BENEFICARY_RES,
+        payload: response,
+      });
+    } catch (err) {
+      dispatch({
+        type: ActionTypes.UPDATE_BENEFICARY_RES,
+        payload: err?.response?.data?.message,
+      });
+    }
+  };
